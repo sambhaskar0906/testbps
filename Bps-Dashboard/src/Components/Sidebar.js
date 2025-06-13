@@ -60,13 +60,14 @@ const Sidebar = ({ children }) => {
                                     <ListItemIcon sx={{ color: isActive ? 'white' : 'black', minWidth: 40 }}>
                                         {item.icon}
                                     </ListItemIcon>
-                                    <ListItemText primary={item.label} />
+                                    <ListItemText primary={item.label}
+                                        sx={{ pb: index === item.length - 1 ? 2 : 0 }} />
                                 </ListItemButton>
                             </ListItem>
                         );
                     })}
             </List>
-        </Box>
+        </Box >
     );
 
     return (

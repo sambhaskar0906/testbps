@@ -22,10 +22,11 @@ export const sidebarItems = [
     { label: 'Manage Customer', route: '/customer', icon: <SupportAgentIcon /> },
     { label: 'Tracker', route: '/tracker', icon: <MapIcon /> },
     { label: 'Quotation', route: '/quotation', icon: <RequestQuoteIcon /> },
-    { label: 'Ladger', route: '/ladger', icon: <AccountBalanceIcon /> },
-    { label: 'Ladger History', route: '/ladgerhsitory', icon: <AccountBalanceIcon /> },
+    { label: 'Ledger', route: '/ladger', icon: <AccountBalanceIcon /> },
+    { label: 'Ledger History', route: '/ladgerhsitory', icon: <AccountBalanceIcon /> },
     { label: 'Manage User', route: '/users', icon: <PeopleIcon /> },
     { label: 'Manage Station', route: '/station', icon: <LocationOnIcon /> },
     { label: 'Manage Expenses', route: '/expenses', icon: <EditNoteIcon /> },
     { label: 'Contact', route: '/contact', icon: <ContactPageIcon /> },
+    { label: 'Booking Report', route: '/booking-report', icon: <BookOnlineIcon /> },
 ];

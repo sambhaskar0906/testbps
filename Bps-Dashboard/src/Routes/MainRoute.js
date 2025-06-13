@@ -38,6 +38,7 @@ import ExpensesCard from '../Pages/Admin/Expenses/ExpensesCard';
 import UserForm from '../Pages/Admin/Manage User/Form/UserForm';
 import EditUser from '../Pages/Admin/Manage User/Form/EditUser';
 import ViewUser from '../Pages/Admin/Manage User/Form/ViewUser';
+import BookingReport from '../Pages/Admin/BookingReport/bookingReport';
 
 const MainRoute = () => {
     const location = useLocation();
@@ -117,6 +118,10 @@ const MainRoute = () => {
                 <Route path='/quotationform' element={<QuotationForm />} />
                 <Route path="/viewquotation/:bookingId" element={<ViewQuotation />} />
                 <Route path="/updatequotation/:bookingId" element={<EditQuotations />} />
+
+                {/* Booking Report */}
+                <Route path='/booking-report' element={<BookingReport />} />
+
 
                 {/* User Routing - ONLY show if NOT supervisor */}
                 {role !== 'supervisor' && (
