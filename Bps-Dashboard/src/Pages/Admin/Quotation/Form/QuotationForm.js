@@ -11,6 +11,7 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
+import { ArrowBack } from '@mui/icons-material';
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -23,12 +24,18 @@ import { fetchStates, fetchCities, clearCities } from '../../../../features/Loca
 import { createBooking } from "../../../../features/quotation/quotationSlice";
 import { fetchStations } from '../../../../features/stations/stationSlice'
 import CustomerSearch from "../../../../Components/CustomerSearch";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import CheckCircle from '@mui/icons-material/CheckCircle';
+
 const toPay = ['pay', 'paid', 'none'];
 
 const initialValues = {
+  customerSearch: "",
   firstName: "",
+  middleName: "",
   lastName: "",
+  contactNumber: "",
+  email: "",
   startStationName: null,
   endStation: null,
   locality: "",
@@ -92,17 +99,20 @@ const QuotationForm = () => {
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Formik
         initialValues={initialValues}
-        onSubmit={async (values, formikHelpers) => {
+        onSubmit={async (values, { resetForm, setSubmitting }) => {
           try {
+            setSubmitting(true);
             await dispatch(createBooking(values)).unwrap();
-            formikHelpers.resetForm();
+            resetForm();
             navigate('/quotation')
           } catch (error) {
             console.log("Error while adding booking", error);
+          } finally {
+            setSubmitting(false);
           }
         }}
       >
-        {({ values, handleChange, setFieldValue }) => {
+        {({ values, handleChange, setFieldValue, isSubmitting }) => {
           const handleUpdate = (index) => {
             const item = values.productDetails[index];
 
@@ -114,8 +124,6 @@ const QuotationForm = () => {
               });
               return;
             }
-
-            console.log("Updating item:", item);
             setSnackbar({
               open: true,
               message: `Item ${index + 1} updated successfully!`,
@@ -128,6 +136,14 @@ const QuotationForm = () => {
               <EffectSyncCities values={values} dispatch={dispatch} setSenderCities={setSenderCities}
                 setReceiverCities={setReceiverCities} />
               <EffectSyncTotal values={values} setFieldValue={setFieldValue} />
+              <Button
+                variant="outlined"
+                startIcon={<ArrowBack />}
+                onClick={() => navigate(-1)}
+                sx={{ mr: 2 }}
+              >
+                Back
+              </Button>
               <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
                 <Grid size={{ xs: 12 }}>
                   <Typography variant="h6" fontWeight="bold">
@@ -209,23 +225,71 @@ const QuotationForm = () => {
                     </Grid>
                   </Grid>
 
-                  <CustomerSearch
-                    onCustomerSelect={(customer) => {
-                      if (customer) {
-                        setFieldValue("firstName", customer.firstName || "");
-                        setFieldValue("middleName", customer.middleName || "");
-                        setFieldValue("lastName", customer.lastName || "");
-                        setFieldValue("contactNumber", customer.contactNumber?.toString() || "");
-                        setFieldValue("email", customer.emailId || "");
-                      } else {
-                        setFieldValue("firstName", "");
-                        setFieldValue("middleName", "");
-                        setFieldValue("lastName", "");
-                        setFieldValue("contactNumber", "");
-                        setFieldValue("email", "");
-                      }
-                    }}
-                  />
+                  <Grid size={{ xs: 12 }}>
+                    <CustomerSearch
+                      onCustomerSelect={(customer) => {
+                        if (customer) {
+                          setFieldValue("firstName", customer.firstName || "");
+                          setFieldValue("middleName", customer.middleName || "");
+                          setFieldValue("lastName", customer.lastName || "");
+                          setFieldValue("contactNumber", customer.contactNumber?.toString() || "");
+                          setFieldValue("email", customer.emailId || "");
+                        } else {
+                          setFieldValue("firstName", "");
+                          setFieldValue("middleName", "");
+                          setFieldValue("lastName", "");
+                          setFieldValue("contactNumber", "");
+                          setFieldValue("email", "");
+                        }
+                      }}
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="First Name"
+                      name="firstName"
+                      value={values.firstName}
+                      onChange={handleChange}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Middle Name"
+                      name="middleName"
+                      value={values.middleName}
+                      onChange={handleChange}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Last Name"
+                      name="lastName"
+                      value={values.lastName}
+                      onChange={handleChange}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Contact Number"
+                      name="contactNumber"
+                      value={values.contactNumber}
+                      onChange={handleChange}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Email"
+                      name="email"
+                      value={values.email}
+                      onChange={handleChange}
+                    />
+                  </Grid>
 
 
                   <Grid size={{ xs: 12 }}>
@@ -480,18 +544,77 @@ const QuotationForm = () => {
                     </Grid>
                   </Grid>
 
-
-
-
                   <Grid size={{ xs: 12 }}>
                     <Button
                       type="submit"
                       fullWidth
                       variant="contained"
                       color="primary"
+                      disabled={isSubmitting}
+                      sx={{
+                        height: 50,
+                        position: 'relative',
+                        fontSize: '1rem',
+                        fontWeight: 'bold',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        },
+                        '&:active': {
+                          transform: 'translateY(0)',
+                        },
+                        '&.Mui-disabled': {
+                          backgroundColor: 'primary.main',
+                          opacity: 0.9,
+                        }
+                      }}
                     >
-                      Submit All
+                      {isSubmitting ? (
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          {[0, 1, 2].map((i) => (
+                            <Box
+                              key={i}
+                              sx={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: '50%',
+                                backgroundColor: 'common.white',
+                                animation: 'pulse 1.4s infinite ease-in-out',
+                                animationDelay: `${i * 0.16}s`,
+                                '@keyframes pulse': {
+                                  '0%, 100%': { opacity: 0.3, transform: 'scale(0.8)' },
+                                  '50%': { opacity: 1, transform: 'scale(1.2)' },
+                                }
+                              }}
+                            />
+                          ))}
+                          <Typography
+                            component="span"
+                            sx={{
+                              ml: 1.5,
+                              color: 'common.white',
+                              opacity: 0.9
+                            }}
+                          >
+                            Processing...
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <CheckCircle sx={{ mr: 1, fontSize: '1.2rem' }} />
+                          Submit Booking
+                        </Box>
+                      )}
                     </Button>
+
                   </Grid>
                 </Grid>
               </Box>

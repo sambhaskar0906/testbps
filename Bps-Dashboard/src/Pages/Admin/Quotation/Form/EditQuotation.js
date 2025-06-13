@@ -20,6 +20,7 @@ import AddIcon from "@mui/icons-material/Add";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { viewBookingById, updateBookingById } from "../../../../features/quotation/quotationSlice";
+import { ArrowBack } from '@mui/icons-material';
 
 const initialValues = {
     firstName: "",
@@ -153,12 +154,15 @@ const EditQuotationForm = () => {
 
                     return (
                         <Form>
+                            <Button
+                                variant="outlined"
+                                startIcon={<ArrowBack />}
+                                onClick={() => navigate(-1)}
+                                sx={{ mr: 2 }}
+                            >
+                                Back
+                            </Button>
                             <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
-                                <Grid size={{ xs: 12 }}>
-                                    <Typography variant="h6" fontWeight="bold">
-                                        Edit Customer Quotation
-                                    </Typography>
-                                </Grid>
                                 <Grid container spacing={2}>
                                     <Grid size={{ xs: 12, sm: 6 }}>
                                         <TextField

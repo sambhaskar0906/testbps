@@ -9,15 +9,17 @@ import {
     CardContent,
     TextField,
     Avatar,
+    Button,
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { viewBookingById } from "../../../../features/quotation/quotationSlice";
 import { CircularProgress } from "@mui/material";
 import { Home, LocalShipping, InsertDriveFile } from "@mui/icons-material";
+import { ArrowBack } from '@mui/icons-material';
 
 const StyledTextField = ({ label, value }) => (
     <Grid item xs={12} sm={6} md={4}>
@@ -75,6 +77,7 @@ const SectionHeader = ({ icon, title }) => (
 
 const ViewQuotation = () => {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const { bookingId } = useParams();
     const { viewedBooking, loading } = useSelector((state) => state.quotations);
 
@@ -95,6 +98,14 @@ const ViewQuotation = () => {
 
     return (
         <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <Button
+                variant="outlined"
+                startIcon={<ArrowBack />}
+                onClick={() => navigate(-1)}
+                sx={{ mr: 2 }}
+            >
+                Back
+            </Button>
             <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1200, mx: "auto" }}>
                 <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
                     <Typography variant="h4" fontWeight={600} mb={2}>

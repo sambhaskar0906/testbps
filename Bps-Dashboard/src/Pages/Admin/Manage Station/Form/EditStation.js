@@ -74,7 +74,8 @@ const EditStation = () => {
         address: '',
         state: '',
         city: '',
-        pincode: ''
+        pincode: '',
+        gst: '',
     });
 
     // Fetch states on mount
@@ -106,7 +107,8 @@ const EditStation = () => {
                 address: viewedStation.address || '',
                 state: viewedStation.state || '',
                 city: viewedStation.city || '',
-                pincode: viewedStation.pincode || ''
+                pincode: viewedStation.pincode || '',
+                gst: viewedStation.gst || '',
             });
         }
     }, [viewedStation]);
@@ -191,7 +193,7 @@ const EditStation = () => {
                                     variant="outlined"
                                     InputLabelProps={{ style: { fontWeight: 600 } }}
                                     sx={{
-                                         minWidth:250,
+                                        minWidth: 250,
                                         '& .MuiOutlinedInput-root': {
                                             borderRadius: 2,
                                             backgroundColor: '#fff',
@@ -226,7 +228,7 @@ const EditStation = () => {
                                     variant="outlined"
                                     InputLabelProps={{ style: { fontWeight: 600 } }}
                                     sx={{
-                                        minWidth:250,
+                                        minWidth: 250,
                                         '& .MuiOutlinedInput-root': {
                                             borderRadius: 2,
                                             backgroundColor: '#fff',
@@ -250,6 +252,7 @@ const EditStation = () => {
                             </Grid>
 
                             <EditableTextField label="Pincode" name="pincode" value={form.pincode} onChange={handleChange} />
+                            <EditableTextField label="GST Number" name="gst" value={form.gst} onChange={handleChange} />
                         </Grid>
                     </CardContent>
                 </Card>

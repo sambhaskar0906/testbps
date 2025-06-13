@@ -11,9 +11,9 @@ import {
     CardContent
 } from '@mui/material';
 import { Home, Business, ArrowBack } from '@mui/icons-material';
-import { useNavigate,useParams } from 'react-router-dom';
-import {useDispatch,useSelector} from 'react-redux'
-import {getStationById,clearViewedStation} from "../../../../features/stations/stationSlice"
+import { useNavigate, useParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux'
+import { getStationById, clearViewedStation } from "../../../../features/stations/stationSlice"
 const StyledTextField = ({ label, value }) => (
     <Grid item xs={12} sm={6} md={4}>
         <TextField
@@ -66,19 +66,18 @@ const SectionHeader = ({ icon, title }) => (
 
 const StationView = () => {
     const navigate = useNavigate();
-    const {stationId} = useParams();
+    const { stationId } = useParams();
     const dispatch = useDispatch();
-    const station = useSelector((state)=> state.stations.viewedStation);
+    const station = useSelector((state) => state.stations.viewedStation);
 
-    useEffect(()=>{
-        if(stationId)
-        {
+    useEffect(() => {
+        if (stationId) {
             dispatch(getStationById(stationId));
         }
-        return ()=>{
+        return () => {
             dispatch(clearViewedStation());
         }
-    },[stationId,dispatch]);
+    }, [stationId, dispatch]);
     if (!station) {
         return (
             <Box sx={{ p: 4, textAlign: 'center' }}>
@@ -86,8 +85,8 @@ const StationView = () => {
             </Box>
         );
     }
-    
-console.log("details",station);
+
+    console.log("details", station);
     return (
         <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1200, mx: 'auto' }}>
             <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
@@ -113,10 +112,11 @@ console.log("details",station);
                             <StyledTextField label="Contact" value={station.contact} />
                             <StyledTextField label="Email ID" value={station.emailId} />
                             <StyledTextField label="Address" value={station.address} />
-                            
+
                             <StyledTextField label="State" value={station.state} />
                             <StyledTextField label="City" value={station.city} />
                             <StyledTextField label="Pincode" value={station.pincode} />
+                            <StyledTextField label="GST Number" value={station.gst} />
                         </Grid>
                     </CardContent>
                 </Card>

@@ -6,7 +6,7 @@ import {
 import PrintIcon from '@mui/icons-material/Print';
 import { useReactToPrint } from 'react-to-print';
 import { useDispatch, useSelector } from 'react-redux';
-import { allLedger } from '../../../features/customerLedger/customerLedgerSlice';
+import { allLedger, sendInvoices } from '../../../features/customerLedger/customerLedgerSlice';
 import InvoicePDF from '../../../Components/InvoicePdf';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -36,7 +36,14 @@ const LedgerHistory = () => {
                 const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
                 pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`invoice-${selectedInvoice?.invoiceId || 'download'}.pdf`);
+                const blob = pdf.output('blob');
+
+                const formData = new FormData();
+                formData.append('file', blob, `invoice-${selectedInvoice?.invoiceId || 'download'}.pdf`);
+                formData.append('bookingId', selectedInvoice?.bookingId);
+                formData.append('email', selectedInvoice?.email);
+
+                dispatch(sendInvoices(formData));
             } catch (error) {
                 console.error('PDF generation error:', error);
             }

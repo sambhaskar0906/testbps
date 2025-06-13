@@ -26,9 +26,8 @@ const LedgerCard = () => {
     ];
 
     const handleSubmit = (bookingIds) => {
-        console.log("Generating for IDs:", bookingIds);
         dispatch(generateInvoices({ bookingIds }));
-
+        window.location.reload();
     };
 
 

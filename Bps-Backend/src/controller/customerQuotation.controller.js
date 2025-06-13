@@ -10,8 +10,8 @@ const formatQuotations = (quotations) => {
   return quotations.map((q, index) => ({
     "S.No.": index + 1,
     "Booking ID": q.bookingId,
-    "orderBy": q.createdByRole || 'N/A',
-    "Date": q.quotationDate ? q.quotationDate.toISOString().split("T")[0] : "",
+    "orderBy": `${q.createdByRole} ${q.startStation?.stationName || ''}`,
+    "Date": q.quotationDate.toLocaleDateString('en-CA'),
     "Name": q.customerId
       ? `${q.customerId.firstName} ${q.customerId.lastName}`
       : `${q.firstName || ""} ${q.lastName || ""}`.trim(),
@@ -84,6 +84,7 @@ export const createQuotation = asyncHandler(async (req, res, next) => {
     amount,
     productDetails,
     locality,
+    grandTotal
   } = req.body;
 
   if (!firstName || !lastName) {
@@ -152,13 +153,18 @@ export const createQuotation = asyncHandler(async (req, res, next) => {
     createdByUser: user._id,
     createdByRole: user.role,
     productDetails,
+    grandTotal,
   });
-
+  const formattedQuotation = {
+    ...quotation.toObject(),
+    quotationDate: new Date(quotation.quotationDate).toLocaleDateString("en-IN"),
+    proposedDeliveryDate: new Date(quotation.proposedDeliveryDate).toLocaleDateString("en-IN"),
+  };
   await quotation.save();
   await sendBookingEmail(customer.emailId, quotation);
   res
     .status(201)
-    .json(new ApiResponse(201, quotation, "Quotation created successfully"));
+    .json(new ApiResponse(201, formattedQuotation, "Quotation created successfully"));
 });
 
 
@@ -259,13 +265,23 @@ export const searchQuotationByBookingId = asyncHandler(async (req, res, next) =>
   }
 
   const quotation = await Quotation.findOne({ bookingId })
-    .populate("startStation", "stationName")
-    .populate("customerId", "firstName lastName");
+    .populate("startStation", "stationName gst address contact")
+    .populate("customerId", "firstName lastName")
+    .lean();
 
   if (!quotation) {
     return next(new ApiError(404, "Quotation not found with the provided Booking ID"));
   }
+  const formatDate = (date) =>
+    new Date(date).toLocaleDateString("en-CA");
 
+  if (quotation.quotationDate) {
+    quotation.quotationDate = formatDate(quotation.quotationDate);
+  }
+
+  if (quotation.proposedDeliveryDate) {
+    quotation.proposedDeliveryDate = formatDate(quotation.proposedDeliveryDate);
+  }
   res.status(200).json(new ApiResponse(200, quotation));
 });
 
@@ -298,13 +314,20 @@ export const getCancelledList = asyncHandler(async (req, res) => {
     deliveries: formatted
   }));
 });
-
+const getRevenueBookingFilter = (type, user) => {
+  const base = getBookingFilterByType(type, user);
+  if (base.$and) {
+    base.$and.unshift({ isDelivered: true });
+    return base;
+  }
+  return { ...base, isDelivered: true };
+};
 
 // Controller to get revenue details from quotations
 // Controller to get total revenue from quotations
 export const getRevenue = asyncHandler(async (req, res) => {
- 
-  const quotations = await Quotation.find(req.roleQueryFilter)
+  const filter = getRevenueBookingFilter(req.query.type, req.user);
+  const quotations = await Quotation.find(filter)
     .select('bookingId quotationDate startStationName endStation grandTotal computedTotalRevenue amount sTax')
     .lean();
 
@@ -412,7 +435,7 @@ export const sendBookingEmail = async (email, booking) => {
     toCity,
     toPincode,
     productDetails,
-   amount
+    amount
   } = booking;
 
   let productDetailsText = '';
@@ -476,7 +499,7 @@ export const sendBookingEmailById = async (req, res) => {
 
     res.status(200).json({ message: 'Booking confirmation email sent successfully' });
   } catch (error) {
-   console.error('Error sending booking email by ID:', bookingId, error);
+    console.error('Error sending booking email by ID:', bookingId, error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };

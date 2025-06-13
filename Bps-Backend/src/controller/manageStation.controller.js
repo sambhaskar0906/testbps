@@ -5,8 +5,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 // Create Station
 const createManageStation = asyncHandler(async (req, res) => {
-  
-  const { stationName, contact, emailId, address, state, city, pincode,gst } = req.body;
+
+  const { stationName, contact, emailId, address, state, city, pincode, gst } = req.body;
 
   if ([stationName, contact, emailId, address, state, city, pincode].some(field => typeof field === 'string' && field.trim() === "")) {
     throw new ApiError(400, "All fields are compulsory");
@@ -17,8 +17,23 @@ const createManageStation = asyncHandler(async (req, res) => {
   });
 
   if (existedStation) {
-    throw new ApiError(401, "Please provide unique email and stationName");
+    const fieldErrors = {};
+
+    if (existedStation.stationName === stationName) {
+      fieldErrors.stationName = "Station name already exists";
+    }
+    if (existedStation.emailId === emailId) {
+      fieldErrors.emailId = "Email already exists";
+    }
+    if (existedStation.contact === contact) {
+      fieldErrors.contact = "Contact number already exists";
+    }
+
+    if (Object.keys(fieldErrors).length > 0) {
+      return res.status(409).json({ errors: fieldErrors });
+    }
   }
+
 
   const station = await manageStation.create({
     stationName,
@@ -83,7 +98,7 @@ const updateStation = asyncHandler(async (req, res) => {
   const stationId = req.params.id;
 
   const updatedStation = await manageStation.findOneAndUpdate(
-    {stationId: stationId},
+    { stationId: stationId },
     req.body,
     { new: true, runValidators: true }
   );
@@ -100,7 +115,7 @@ const updateStation = asyncHandler(async (req, res) => {
 const deleteStation = asyncHandler(async (req, res) => {
   const stationId = req.params.id;
 
-  const deletedStation = await manageStation.findOneAndDelete({stationId});
+  const deletedStation = await manageStation.findOneAndDelete({ stationId });
 
   if (!deletedStation) {
     throw new ApiError(404, "Station not found");

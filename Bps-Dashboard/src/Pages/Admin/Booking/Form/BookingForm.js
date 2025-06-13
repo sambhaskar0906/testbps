@@ -18,52 +18,76 @@ import { fetchStates, fetchCities, clearCities } from '../../../../features/Loca
 import { fetchStations } from '../../../../features/stations/stationSlice'
 import { createBooking } from '../../../../features/booking/bookingSlice';
 import { useNavigate } from "react-router-dom";
-
+import CustomerSearch from "../../../../Components/CustomerSearch";
+import { ArrowBack } from '@mui/icons-material';
+import CheckCircle from '@mui/icons-material/CheckCircle';
 
 const toPay = ['pay', 'paid', 'none'];
 
-const initialValues = {
-  startStation: "",
-  endStation: "",
-  bookingDate: null,
-  deliveryDate: null,
-  customerSearch: "",
-  firstName: "",
-  middleName: "",
-  lastName: "",
-  mobile: "",
-  email: "",
-  senderName: "",
-  senderLocality: "",
-  fromCity: "",
-  senderGgt: "",
-  fromState: "",
-  senderPincode: "",
-  receiverName: "",
-  receiverLocality: "",
-  receiverGgt: "",
-  toState: "",
-  toCity: "",
-  toPincode: "",
-  items: [
-    {
-      receiptNo: "",
-      refNo: "",
-      insurance: "",
-      vppAmount: "",
-      toPayPaid: "",
-      weight: "",
-      amount: "",
-    },
-  ],
-  addComment: "",
-  freight: "",
-  ins_vpp: "",
-  billTotal: "",
-  cgst: "",
-  sgst: "",
-  igst: "",
-  grandTotal: "",
+const generateUniqueId = (prefix, existingSet, setFunction) => {
+  let newId;
+  do {
+    newId = prefix + Math.random().toString(36).substr(2, 6).toUpperCase();
+  } while (existingSet.has(newId));
+
+  const updatedSet = new Set(existingSet);
+  updatedSet.add(newId);
+  setFunction(updatedSet);
+
+  return newId;
+};
+
+// Dummy setters for initial render
+const dummySet = new Set();
+const dummySetter = () => { };
+
+const generateInitialValues = () => {
+  const receiptNo = generateUniqueId("RCPT-", dummySet, dummySetter);
+  const refNo = generateUniqueId("REF-", dummySet, dummySetter);
+
+  return {
+    startStation: "",
+    endStation: "",
+    bookingDate: null,
+    deliveryDate: null,
+    customerSearch: "",
+    firstName: "",
+    middleName: "",
+    lastName: "",
+    mobile: "",
+    email: "",
+    senderName: "",
+    senderLocality: "",
+    fromCity: "",
+    senderGgt: "",
+    fromState: "",
+    senderPincode: "",
+    receiverName: "",
+    receiverLocality: "",
+    receiverGgt: "",
+    toState: "",
+    toCity: "",
+    toPincode: "",
+    items: [
+      {
+        receiptNo: receiptNo,
+        refNo: refNo,
+        insurance: "",
+        vppAmount: "",
+        toPayPaid: "",
+        weight: "",
+        amount: "",
+      },
+    ],
+    addComment: "",
+    freight: "",
+    ins_vpp: "",
+    billTotal: "",
+    cgst: "",
+    sgst: "",
+    igst: "",
+    grandTotal: "",
+  };
 };
 const totalFields = [
   { name: "freight", label: "FREIGHT", readOnly: false },
@@ -76,26 +100,37 @@ const totalFields = [
 ];
 const calculateTotals = (values) => {
   const items = values.items || [];
-  const billTotal = items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
+  const itemTotal = items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const freight = Number(values.freight || 0);
   const ins_vpp = Number(values.ins_vpp || 0);
-  const cgst = Number(values.cgst || 0);
-  const sgst = Number(values.sgst || 0);
-  const igst = Number(values.igst || 0);
 
-  const grandTotal = billTotal + freight + ins_vpp + cgst + sgst + igst;
+  const billTotal = itemTotal + freight + ins_vpp;
+
+  const cgst = (Number(values.cgst || 0) / 100) * billTotal;
+  const sgst = (Number(values.sgst || 0) / 100) * billTotal;
+  const igst = (Number(values.igst || 0) / 100) * billTotal;
+
+  const grandTotal = billTotal + cgst + sgst + igst;
 
   return {
     billTotal: billTotal.toFixed(2),
     grandTotal: grandTotal.toFixed(2),
-    computedTotalRevenue: grandTotal.toFixed(2)
+    computedTotalRevenue: grandTotal.toFixed(2),
+    cgst: cgst.toFixed(2),
+    sgst: sgst.toFixed(2),
+    igst: igst.toFixed(2),
   };
 };
+
 
 const BookingForm = () => {
   const [senderCities, setSenderCities] = React.useState([]);
   const [receiverCities, setReceiverCities] = React.useState([]);
+  const [generatedReceiptNos, setGeneratedReceiptNos] = React.useState(new Set());
+  const [generatedRefNos, setGeneratedRefNos] = React.useState(new Set());
+
+
 
   const dispatch = useDispatch();
   const { states, cities } = useSelector((state) => state.location);
@@ -109,26 +144,37 @@ const BookingForm = () => {
   }, [dispatch]);
 
 
-
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Formik
-        initialValues={initialValues}
-        onSubmit={async (values, formikHelpers) => {
+        initialValues={generateInitialValues()}
+        onSubmit={async (values, { resetForm, setSubmitting }) => {
           try {
+            setSubmitting(true);
             await dispatch(createBooking(values)).unwrap();
-            formikHelpers.resetForm();
+            resetForm();
             navigate('/booking')
           } catch (error) {
             console.log("Error while adding booking", error);
+          } finally {
+            setSubmitting(false);
           }
-        }}
+        }
+        }
       >
-        {({ values, handleChange, setFieldValue }) => (
+        {({ values, handleChange, setFieldValue, isSubmitting }) => (
           <Form>
             <EffectSyncCities values={values} dispatch={dispatch} setSenderCities={setSenderCities}
               setReceiverCities={setReceiverCities} />
             <EffectSyncTotals values={values} setFieldValue={setFieldValue} />
+            <Button
+              variant="outlined"
+              startIcon={<ArrowBack />}
+              onClick={() => navigate(-1)}
+              sx={{ mr: 2 }}
+            >
+              Back
+            </Button>
             {/* ... all your form fields go here ... */}
             <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
               <Grid container spacing={2}>
@@ -211,68 +257,69 @@ const BookingForm = () => {
                   </Grid>
                 </Grid>
 
-                <Grid size={{ xs: 12, sm: 9 }}>
-                  <Typography fontWeight="bold">
-                    Customer Name/Number
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    placeholder="Search for customer"
-                    name="customerSearch"
-                    value={values.customerSearch}
-                    onChange={handleChange}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon />
-                        </InputAdornment>
-                      ),
+                <Grid size={{ xs: 12 }}>
+                  <CustomerSearch
+                    onCustomerSelect={(customer) => {
+                      if (customer) {
+                        setFieldValue("firstName", customer.firstName || "");
+                        setFieldValue("middleName", customer.middleName || "");
+                        setFieldValue("lastName", customer.lastName || "");
+                        setFieldValue("contactNumber", customer.contactNumber?.toString() || "");
+                        setFieldValue("email", customer.emailId || "");
+                      } else {
+                        setFieldValue("firstName", "");
+                        setFieldValue("middleName", "");
+                        setFieldValue("lastName", "");
+                        setFieldValue("contactNumber", "");
+                        setFieldValue("email", "");
+                      }
                     }}
                   />
                 </Grid>
-                <Grid
-                  size={{ xs: 12, sm: 3 }}
-                  sx={{ display: "flex", alignItems: "flex-end" }}
-                >
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    type="submit"
-                  >
-                    Register
-                  </Button>
-                </Grid>
 
-                {["firstName", "middleName", "lastName"].map((name) => (
-                  <Grid size={{ xs: 12, sm: 4 }} key={name}>
-                    <TextField
-                      fullWidth
-                      label={name.replace(/([A-Z])/g, " $1")}
-                      name={name}
-                      value={values[name]}
-                      onChange={handleChange}
-                    />
-                  </Grid>
-                ))}
-
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     fullWidth
-                    label="Contact Number"
-                    name="mobile"
-                    value={values.mobile}
+                    label="First Name"
+                    name="firstName"
+                    value={values.firstName}
                     onChange={handleChange}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Middle Name"
+                    name="middleName"
+                    value={values.middleName}
+                    onChange={handleChange}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Last Name"
+                    name="lastName"
+                    value={values.lastName}
+                    onChange={handleChange}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Contact Number"
+                    name="contactNumber"
+                    value={values.contactNumber}
+                    onChange={handleChange}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     fullWidth
                     label="Email"
                     name="email"
                     value={values.email}
                     onChange={handleChange}
-                    type="email"
                   />
                 </Grid>
 
@@ -491,8 +538,8 @@ const BookingForm = () => {
                           variant="contained"
                           onClick={() =>
                             push({
-                              receiptNo: "",
-                              refNo: "",
+                              receiptNo: generateUniqueId("RCPT-", generatedReceiptNos, setGeneratedReceiptNos),
+                              refNo: generateUniqueId("REF-", generatedRefNos, setGeneratedRefNos),
                               insurance: "",
                               vppAmount: "",
                               toPayPaid: "",
@@ -549,8 +596,69 @@ const BookingForm = () => {
                     fullWidth
                     variant="contained"
                     color="primary"
+                    disabled={isSubmitting}
+                    sx={{
+                      height: 50,
+                      position: 'relative',
+                      fontSize: '1rem',
+                      fontWeight: 'bold',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      },
+                      '&:active': {
+                        transform: 'translateY(0)',
+                      },
+                      '&.Mui-disabled': {
+                        backgroundColor: 'primary.main',
+                        opacity: 0.9,
+                      }
+                    }}
                   >
-                    Submit All
+                    {isSubmitting ? (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        {[0, 1, 2].map((i) => (
+                          <Box
+                            key={i}
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              backgroundColor: 'common.white',
+                              animation: 'pulse 1.4s infinite ease-in-out',
+                              animationDelay: `${i * 0.16}s`,
+                              '@keyframes pulse': {
+                                '0%, 100%': { opacity: 0.3, transform: 'scale(0.8)' },
+                                '50%': { opacity: 1, transform: 'scale(1.2)' },
+                              }
+                            }}
+                          />
+                        ))}
+                        <Typography
+                          component="span"
+                          sx={{
+                            ml: 1.5,
+                            color: 'common.white',
+                            opacity: 0.9
+                          }}
+                        >
+                          Processing...
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <CheckCircle sx={{ mr: 1, fontSize: '1.2rem' }} />
+                        Submit Booking
+                      </Box>
+                    )}
                   </Button>
                 </Grid>
               </Grid>
@@ -592,8 +700,6 @@ const EffectSyncTotals = ({ values, setFieldValue }) => {
     const totals = calculateTotals(values);
     setFieldValue("billTotal", totals.billTotal);
     setFieldValue("grandTotal", totals.grandTotal);
-    // Optional:
-    // setFieldValue("computedTotalRevenue", totals.computedTotalRevenue);
   }, [
     values.items,
     values.freight,
@@ -606,6 +712,7 @@ const EffectSyncTotals = ({ values, setFieldValue }) => {
 
   return null;
 };
+
 
 
 export default BookingForm;

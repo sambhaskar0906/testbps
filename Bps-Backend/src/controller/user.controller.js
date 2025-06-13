@@ -51,7 +51,13 @@ export const loginUser = asyncHandler(async (req, res) => {
     if (!user) {
       throw new ApiError(401, "Invalid email or password");
     }
+    if (user.isBlacklisted) {
+      throw new ApiError(403, "Your account has been blacklisted. Please contact support.");
+    }
 
+    if (user.isDeactivated) {
+      throw new ApiError(403, "Your account has been deactivated. Please contact support.");
+    }
     // Check if password is correct
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect) {
@@ -317,17 +323,16 @@ export const getBlacklistedSupervisorsList = asyncHandler(async (req, res) => {
 export const deleteUser = asyncHandler(async (req, res) => {
   try {
 
-    const {adminId} = req.params;
-    const deleteUser = await User.findOneAndDelete({adminId});
-    if(!deleteUser)
-    {
-      res.status(404).json({message:"User not found"});
+    const { adminId } = req.params;
+    const deleteUser = await User.findOneAndDelete({ adminId });
+    if (!deleteUser) {
+      res.status(404).json({ message: "User not found" });
     }
 
-     res.status(200).json(new ApiResponse(200, "User deleted successfully"));
+    res.status(200).json(new ApiResponse(200, "User deleted successfully"));
 
 
-   
+
   } catch (error) {
     console.error("Delete user error:", error.message);
     throw new ApiError(500, error.message);
@@ -481,5 +486,4 @@ export const sentResetCode = asyncHandler(async (req, res) => {
 
 
 export { tokenBlacklist };
-
 

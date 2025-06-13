@@ -1,6 +1,6 @@
 import Booking from "../model/booking.model.js";
 import Quotation from "../model/customerQuotation.model.js";
-
+import nodemailer from 'nodemailer';
 import { Customer } from "../model/customer.model.js";
 
 /**
@@ -54,7 +54,12 @@ export const previewInvoices = async (req, res) => {
       return {
         sno: index + 1,
         bookingId: order.bookingId,
-        date: order.bookingDate || order.quotationDate,
+        date: order.bookingDate
+          ? new Date(order.bookingDate).toLocaleDateString("en-CA")
+          : order.quotationDate
+            ? new Date(order.quotationDate).toLocaleDateString("en-CA")
+            : "",
+
         pickupLocation: order.startStation?.stationName || "",
         dropLocation: order.endStation?.stationName || "",
         amount: totalAmount,
@@ -155,12 +160,12 @@ export const getAllInvoices = async (req, res) => {
   try {
     const bookings = await Booking.find({ ...req.roleQueryFilter, invoiceGenerated: true }).populate(
       "customerId",
-      "firstName lastName"
+      "firstName lastName emailId"
     );
 
     const quotations = await Quotation.find({ ...req.roleQueryFilter, invoiceGenerated: true }).populate(
       "customerId",
-      "firstName lastName"
+      "firstName lastName emailId"
     );
 
     const allInvoices = [...bookings, ...quotations];
@@ -179,17 +184,22 @@ export const getAllInvoices = async (req, res) => {
       const customerName = invoice.customerId
         ? `${invoice.customerId.firstName} ${invoice.customerId.lastName}`
         : "Unknown Customer";
-
+      const customerEmail = invoice.email || "Not Available";
       return {
         sno: index + 1,
         invoiceId,
         bookingId: invoice.bookingId,
-        date: invoice.bookingDate || invoice.quotationDate,
+        date: invoice.bookingDate
+          ? new Date(invoice.bookingDate).toLocaleDateString("en-CA")
+          : invoice.quotationDate
+            ? new Date(invoice.quotationDate).toLocaleDateString("en-CA")
+            : "",
         name: customerName,
         order: invoice.bookingDate ? "Booking" : "Quotation",
         amount: totalAmount,
         paidAmount,
         remainingAmount,
+        email: customerEmail,
         invoiceLink: `http://localhost:8000/invoices/${invoiceId}`,
       };
     });
@@ -198,5 +208,67 @@ export const getAllInvoices = async (req, res) => {
   } catch (error) {
     console.error("Error fetching invoices:", error);
     return res.status(500).json({ message: "Error fetching invoices" });
+  }
+};
+
+export const sendInvoiceByBookingId = async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+
+    if (!bookingId) {
+      return res.status(400).json({ message: 'Booking ID is required' });
+    }
+
+    // Find booking by bookingId
+    const booking = await Booking.findOne({ bookingId });
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    const recipientEmail = booking.email;
+    if (!recipientEmail) {
+      return res.status(400).json({ message: 'Email not found in booking' });
+    }
+
+    // Email transporter using Gmail
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.gmail,
+        pass: process.env.app_pass,
+      },
+    });
+
+    // Send mail
+    await transporter.sendMail({
+      from: `"Bharat Parcel Service" <${process.env.gmail}>`,
+      to: recipientEmail,
+      subject: `Invoice for Booking ID ${bookingId}`,
+      html: `
+    <p>Dear Customer,</p>
+    <p>Thank you for choosing <strong>Bharat Parcel Service</strong>.</p>
+    <p>Please find the attached invoice for your recent booking with ID: <strong>${bookingId}</strong>.</p>
+    <p>If you have any questions or concerns, feel free to contact our support team.</p>
+    <br/>
+    <p>Best regards,<br/>`,
+      attachments: [
+        {
+          filename: req.file.originalname,
+          content: req.file.buffer,
+        },
+      ],
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Invoice sent to ${recipientEmail}`,
+    });
+
+  } catch (error) {
+    console.error('Error sending invoice:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send invoice',
+    });
   }
 };

@@ -3,9 +3,9 @@ import Station from '../model/manageStation.model.js';
 import { Customer } from '../model/customer.model.js';
 import nodemailer from 'nodemailer';
 import { User } from '../model/user.model.js'
-import {sendBookingConfirmation} from './whatsappController.js'
-import {sendWhatsAppMessage} from '../services/whatsappServices.js'
-import {ApiResponse} from "../utils/ApiResponse.js"
+import { sendBookingConfirmation } from './whatsappController.js'
+import { sendWhatsAppMessage } from '../services/whatsappServices.js'
+import { ApiResponse } from "../utils/ApiResponse.js"
 async function resolveStation(name) {
   const station = await Station.findOne({ stationName: new RegExp(`^${name}$`, 'i') });
   if (!station) throw new Error(`Station "${name}" not found`);
@@ -57,11 +57,55 @@ export const viewBooking = async (req, res) => {
     const booking = await Booking.findOne({
       $or: [{ bookingId: id }]
     })
-      .populate('startStation endStation', 'stationName')
+      .populate('startStation', 'stationName gst address contact')
+      .populate('endStation', 'stationName')
       .lean();
 
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
-    res.json(booking);
+
+    // Extract only the necessary fields
+    const simplifiedResponse = {
+      bookingId: booking.bookingId,
+      firstName: booking.firstName,
+      lastName: booking.lastName,
+      mobile: booking.mobile,
+      email: booking.email,
+      bookingDate: booking.bookingDate
+        ? new Date(booking.bookingDate).toLocaleDateString('en-CA')
+        : null,
+      deliveryDate: booking.deliveryDate
+        ? new Date(booking.deliveryDate).toLocaleDateString('en-CA')
+        : null,
+      senderName: booking.senderName,
+      senderGgt: booking.senderGgt,
+      fromState: booking.fromState,
+      fromCity: booking.fromCity,
+      senderPincode: booking.senderPincode,
+      receiverName: booking.receiverName,
+      receiverGgt: booking.receiverGgt,
+      toState: booking.toState,
+      toCity: booking.toCity,
+      toPincode: booking.toPincode,
+      items: booking.items,
+      freight: booking.freight,
+      ins_vpp: booking.ins_vpp,
+      cgst: booking.cgst,
+      sgst: booking.sgst,
+      igst: booking.igst,
+      billTotal: booking.billTotal,
+      grandTotal: booking.grandTotal,
+      startStation: {
+        stationName: booking.startStation?.stationName,
+        gst: booking.startStation?.gst,
+        address: booking.startStation?.address,
+        contact: booking.startStation?.contact
+      },
+      endStation: {
+        stationName: booking.endStation?.stationName
+      }
+    };
+
+    res.json(simplifiedResponse);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: err.message });
@@ -310,7 +354,7 @@ export const sendBookingAcknowledgementEmail = async (email, booking) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    
+
   } catch (error) {
     console.error('Error sending acknowledgement email:', error);
   }
@@ -363,7 +407,7 @@ export const sendBookingEmail = async (email, booking) => {
 
   try {
     await transporter.sendMail(mailOptions);
-   
+
   } catch (error) {
     console.error('Error sending booking confirmation email:', error);
   }
@@ -405,7 +449,7 @@ export const sendBookingEmailById = async (req, res) => {
 
 
 export const updateBooking = async (req, res) => {
-  
+
   try {
     const { id } = req.params;
     const updates = { ...req.body };
@@ -502,10 +546,11 @@ export const getBookingStatusList = async (req, res) => {
     const data = validBookings.map((b, i) => ({
       SNo: i + 1,
       orderBy:
-    b.requestedByRole === 'public'
-      ? 'Third Party'
-      : b.createdByRole || 'N/A',
-      date: b.bookingDate?.toISOString().slice(0, 10) || 'N/A',
+        b.requestedByRole === 'public'
+          ? 'Third Party'
+          : `${b.createdByRole} ${b.startStation?.stationName || ''}` || 'N/A',
+      date: b.bookingDate ? new Date(b.bookingDate).toLocaleDateString('en-CA') : 'N/A',
+
       fromName: b.senderName || 'N/A',
       pickup: b.startStation?.stationName || 'N/A',
       toName: b.receiverName || 'N/A',
@@ -577,21 +622,21 @@ export const rejectThirdPartyBookingRequest = async (req, res) => {
     const { bookingId } = req.params;
     const user = req.user;
 
-   
-    
 
-   
+
+
+
     const booking = await Booking.findOne({ bookingId });
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    
+
     if (booking.isApproved) {
       return res.status(400).json({ message: "Booking already approved, cannot reject" });
     }
 
-    
+
 
     await Booking.deleteOne({ bookingId });
     res.status(200).json({ message: "Booking rejected successfully", booking });
@@ -623,15 +668,25 @@ export const cancelBooking = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+const getRevenueBookingFilter = (type, user) => {
+  const base = getBookingFilterByType(type, user);
+  if (base.$and) {
+    base.$and.unshift({ isDelivered: true });
+    return base;
+  }
+  return { ...base, isDelivered: true };
+};
 
 
 
 export const getBookingRevenueList = async (req, res) => {
   try {
     const user = req.user;
-    
 
-    const bookings = await Booking.find(req.roleQueryFilter)
+    const filter = getRevenueBookingFilter(req.query.type, req.user);
+
+
+    const bookings = await Booking.find(filter)
       .select('bookingId bookingDate startStation endStation grandTotal')
       .populate('startStation endStation', 'stationName')
       .lean();
@@ -743,56 +798,113 @@ export const activateBooking = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+export const customerWiseData = async (req, res) => {
+  const { fromDate, endDate } = req.body;
+  const start = new Date(fromDate);
+  start.setHours(0, 0, 0, 0);
 
-
-export const customerWiseData = async(req,res) =>{
-   
-  const {fromDate,endDate} = req.body;
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
   const summary = await Booking.aggregate([
-  {
-    $match: {
-      bookingDate: {
-        $gte: new Date(fromDate),
-        $lte: new Date(endDate)
+    {
+      $match: {
+        bookingDate: {
+          $gte: start,
+          $lte: end,
+        }
+      }
+    },
+    {
+      $group: {
+        _id: "$customerId",
+        totalBookings: { $sum: 1 },
+        billTotal: { $sum: "$billTotal" }
+      }
+    },
+    {
+      $lookup: {
+        from: "customers",
+        localField: "_id",
+        foreignField: "_id",
+        as: "customerDetails"
+      }
+    },
+    {
+      $unwind: {
+        path: "$customerDetails",
+        preserveNullAndEmptyArrays: true
+      }
+    },
+    {
+      $addFields: {
+        taxAmount: {
+          $multiply: ["$billTotal", 0.18]
+        }
+      }
+    },
+    {
+      $project: {
+        customerName: {
+          $concat: [
+            "$customerDetails.firstName", " ",
+            { $ifNull: ["$customerDetails.middleName", ""] }, " ",
+            "$customerDetails.lastName"
+          ]
+        },
+        totalBookings: 1,
+        billTotal: 1,
+        taxAmount: 1
       }
     }
-  },
-  {
-    $group: {
-      _id: "$customerId",
-      totalBookings: { $sum: 1 },
-      billTotal: { $sum: "$billTotal" }
-    }
-  },
-  {
-    $lookup: {
-      from: "customers",
-      localField: "_id",
-      foreignField: "_id",
-      as: "customerDetails"
-    }
-  },
-  {
-    $unwind: {
-      path: "$customerDetails",
-      preserveNullAndEmptyArrays: true
-    }
-  },
-  {
-    $project: {
-      customerName: {
-        $concat: [
-          "$customerDetails.firstName", " ",
-          { $ifNull: ["$customerDetails.middleName", ""] }, " ",
-          "$customerDetails.lastName"
-        ]
-      },
-      totalBookings: 1,
-      billTotal: 1
-    }
-  }
-]);
+  ]);
 
-  res.status(200).json(new ApiResponse(200,summary,"Customer booking succesfully fetched sucessfully"));
-}
-;
+  res.status(200).json(
+    new ApiResponse(200, summary, "Customer booking successfully fetched")
+  );
+};
+export const overallBookingSummary = async (req, res) => {
+  try {
+    const { fromDate, endDate } = req.body;
+    console.log("FILTER DATES:", fromDate, endDate);
+
+    const summary = await Booking.aggregate([
+      {
+        $match: {
+
+          bookingDate: {
+            $gte: new Date(fromDate),
+            $lte: new Date(endDate)
+          }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalBookings: { $sum: 1 },
+          billTotal: { $sum: "$billTotal" }
+        }
+      },
+      {
+        $addFields: {
+          taxAmount: { $multiply: ["$billTotal", 0.18] }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          totalBookings: 1,
+          billTotal: 1,
+          taxAmount: 1
+        }
+      }
+    ]);
+
+    res.status(200).json(
+      new ApiResponse(200, summary[0] || {}, "Overall booking summary fetched successfully")
+    );
+  } catch (error) {
+    res.status(500).json(new ApiResponse(500, null, "Error fetching overall booking summary"));
+  }
+};
+
+

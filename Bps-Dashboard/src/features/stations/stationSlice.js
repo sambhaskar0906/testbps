@@ -1,4 +1,4 @@
-import { createSlice,createAsyncThunk} from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
 
@@ -11,70 +11,69 @@ export const createStation = createAsyncThunk(
       const response = await axios.post(`${BASE_URL}/stations/create`, data);
       return response.data.message;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      console.error("AXIOS ERROR:", err.response?.data); // <-- debug this
+      const message =
+        err.response?.data?.message || err.response?.data?.err || err.message;
+      return rejectWithValue(message);
+
     }
   }
 );
 
 export const fetchStations = createAsyncThunk(
-  'stations/fetchStations',async(_,thunkApi)=>{
-    try{
+  'stations/fetchStations', async (_, thunkApi) => {
+    try {
       const res = await axios.get(`${BASE_URL}/stations/getAllStations`);
       return res.data.message;
-    }catch(error)
-    {
-        return thunkApi.rejectWithValue(error.response?.data?.message || "Failed To fetch Stations");
+    } catch (error) {
+      return thunkApi.rejectWithValue(error.response?.data?.message || "Failed To fetch Stations");
     }
   }
 );
 export const deleteStation = createAsyncThunk(
-  'stations/deleteStation',async(stationId,thunkApi)=>{
-    try{
+  'stations/deleteStation', async (stationId, thunkApi) => {
+    try {
       const res = await axios.delete(`${BASE_URL}/stations/delete/${stationId}`);
       return stationId
     }
-    catch(error)
-    {
+    catch (error) {
       return thunkApi.rejectWithValue(error.response?.data?.message || "Failed to delete the Stations");
     }
   }
 );
 
 export const searchStationByName = createAsyncThunk(
-  'stations/searchByName',async(stationName,thunkApi)=>{
-    try{
+  'stations/searchByName', async (stationName, thunkApi) => {
+    try {
       const res = await axios.get(`${BASE_URL}/stations/name/${stationName}`);
-      const data = res.data.data; 
+      const data = res.data.data;
       return Array.isArray(data) ? data : [data];
     }
-    catch(error)
-    {
+    catch (error) {
       return thunkApi.rejectWithValue(error.response?.data?.message || "Failed to delete the Stations");
     }
   }
 )
 
 export const getStationById = createAsyncThunk(
-  'stations/viewStation',async(stationId,thunkApi)=>{
-    try{
+  'stations/viewStation', async (stationId, thunkApi) => {
+    try {
       const res = await axios.get(`${BASE_URL}/stations/searchById/${stationId}`)
       return res.data.data;
     }
-    catch(error)
-    {
+    catch (error) {
       return thunkApi.rejectWithValue(error.response?.data?.message || "Failed to view Stations");
     }
   }
 )
 //update Station
 export const updateStationById = createAsyncThunk(
-  'station/updateStation',async({stationId,data},thunkApi)=>{
-    try{
-     const res = await axios.put(`${BASE_URL}/stations/update/${stationId}`,data)
-     return res.data.message
+  'station/updateStation', async ({ stationId, data }, thunkApi) => {
+    try {
+      const res = await axios.put(`${BASE_URL}/stations/update/${stationId}`, data)
+      return res.data.message
     }
-    catch(error)
-    {
+    catch (error) {
       return thunkApi.rejectWithValue(error.response?.data?.message || "Failed to Update Stations");
     }
   }
@@ -90,10 +89,11 @@ const initialState = {
     state: '',
     city: '',
     pincode: '',
+    gst: '',
   },
   status: 'idle',
   error: null,
-  viewedStation : null,
+  viewedStation: null,
 };
 
 const stationSlice = createSlice({
@@ -113,8 +113,8 @@ const stationSlice = createSlice({
     setStations: (state, action) => {
       state.list = action.payload;
     },
-    clearViewedStation:(state)=>{
-      state.viewedStation=null;
+    clearViewedStation: (state) => {
+      state.viewedStation = null;
     }
   },
   extraReducers: (builder) => {
@@ -131,45 +131,45 @@ const stationSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload;
       })
-      .addCase(fetchStations.pending,(state)=>{
-        state.loading=true;
-        state.error=null
+      .addCase(fetchStations.pending, (state) => {
+        state.loading = true;
+        state.error = null
       })
-      .addCase(fetchStations.fulfilled,(state,action)=>{
-        state.loading=false;
-        state.list=action.payload
+      .addCase(fetchStations.fulfilled, (state, action) => {
+        state.loading = false;
+        state.list = action.payload
       })
-      .addCase(fetchStations.rejected,(state,action)=>{
-        state.loading=false;
-        state.error=action.payload
+      .addCase(fetchStations.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload
       })
-      .addCase(deleteStation.fulfilled,(state,action)=>{
-        state.list = state.list.filter(station=>station.stationId !== action.payload);
+      .addCase(deleteStation.fulfilled, (state, action) => {
+        state.list = state.list.filter(station => station.stationId !== action.payload);
       })
-      .addCase(searchStationByName.pending,(state,action)=>{
-        state.loading=true;
-        state.error=null
+      .addCase(searchStationByName.pending, (state, action) => {
+        state.loading = true;
+        state.error = null
       })
-      .addCase(searchStationByName.fulfilled,(state,action)=>{
-      state.loading=false;
-      state.list=action.payload
+      .addCase(searchStationByName.fulfilled, (state, action) => {
+        state.loading = false;
+        state.list = action.payload
       })
       //view Station 
-      .addCase(getStationById.pending,(state)=>{
-        state.loading=true;
-        state.error=null
+      .addCase(getStationById.pending, (state) => {
+        state.loading = true;
+        state.error = null
       })
-      .addCase(getStationById.fulfilled,(state,action)=>{
-        state.loading=false;
-        state.viewedStation=action.payload;
-        state.form={
+      .addCase(getStationById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.viewedStation = action.payload;
+        state.form = {
           ...state.form,
           ...action.payload
         }
       })
-      .addCase(getStationById.rejected,(state,action)=>{
-        state.loading=false;
-        state.error=action.payload
+      .addCase(getStationById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload
       })
       //updateStation
       .addCase(updateStationById.pending, (state) => {
@@ -179,14 +179,14 @@ const stationSlice = createSlice({
       .addCase(updateStationById.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.error = null;
-      
+
         const updatedStation = action.payload;
         const index = state.list.findIndex(station => station.stationId === updatedStation.stationId);
         if (index !== -1) {
           state.list[index] = updatedStation;
         }
-      
-        
+
+
         state.form = initialState.form;
         state.viewedStation = null;
       })
@@ -194,12 +194,12 @@ const stationSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload;
       })
-      
+
       ;
   },
 });
 
 
-export const { setFormField, resetForm, addStation, setStations,clearViewedStation } = stationSlice.actions;
+export const { setFormField, resetForm, addStation, setStations, clearViewedStation } = stationSlice.actions;
 
 export default stationSlice.reducer;

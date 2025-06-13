@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import {
@@ -9,11 +9,14 @@ import {
 import { Close, LocalPhone, Email, Home, LocationOn, PinDrop } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchStates, fetchCities, clearCities } from '../../../../features/Location/locationSlice';
-import { createStation,fetchStations } from '../../../../features/stations/stationSlice';
+import { createStation, fetchStations } from '../../../../features/stations/stationSlice';
+import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee';
+import { Alert } from '@mui/material';
 
 const StationForm = ({ open, onClose }) => {
   const dispatch = useDispatch();
   const { states, cities } = useSelector((state) => state.location);
+  const [serverError, setServerError] = useState('');
 
 
   const validationSchema = Yup.object().shape({
@@ -24,6 +27,7 @@ const StationForm = ({ open, onClose }) => {
     street: Yup.string(),
     state: Yup.string().required(),
     city: Yup.string().required(),
+    gst: Yup.string().required(),
     pincode: Yup.string().matches(/^\d{6}$/, 'Must be 6 digits').required(),
   });
 
@@ -37,25 +41,27 @@ const StationForm = ({ open, onClose }) => {
       state: '',
       city: '',
       pincode: '',
+      gst: '',
     },
     validationSchema,
+    validateOnMount: true,
     onSubmit: async (values) => {
+      setServerError('');
       try {
         await dispatch(createStation(values)).unwrap();
         await dispatch(fetchStations());
         formik.resetForm();
         onClose();
-      } catch (err) {
-        console.error('Error creating station:', err);
+      } catch (errMessage) {
+        setServerError(errMessage);
+        console.error("Error creating station:", errMessage);
       }
-    },
-    
+    }
   });
 
   useEffect(() => {
     dispatch(fetchStates());
   }, []);
-  // When state changes, fetch cities
   useEffect(() => {
     if (formik.values.state) {
       dispatch(fetchCities(formik.values.state));
@@ -74,6 +80,11 @@ const StationForm = ({ open, onClose }) => {
       </DialogTitle>
 
       <DialogContent dividers>
+        {serverError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {serverError}
+          </Alert>
+        )}
         <form onSubmit={formik.handleSubmit} noValidate>
           <Grid container spacing={2}>
             <Grid item xs={12}>
@@ -94,7 +105,7 @@ const StationForm = ({ open, onClose }) => {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }} >
               <TextField
                 fullWidth label="Contact" name="contact"
                 value={formik.values.contact}
@@ -112,13 +123,13 @@ const StationForm = ({ open, onClose }) => {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth label="Email" name="emailId" type="email"
                 value={formik.values.emailId}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                error={formik.touched.email && Boolean(formik.errors.emailId)}
+                error={formik.touched.emailId && Boolean(formik.errors.emailId)}
                 helperText={formik.touched.emailId && formik.errors.emailId}
                 InputProps={{
                   startAdornment: (
@@ -130,7 +141,7 @@ const StationForm = ({ open, onClose }) => {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth label="Address" name="address" multiline rows={2}
                 value={formik.values.address}
@@ -148,7 +159,7 @@ const StationForm = ({ open, onClose }) => {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl
                 fullWidth
                 error={formik.touched.state && Boolean(formik.errors.state)}
@@ -170,11 +181,11 @@ const StationForm = ({ open, onClose }) => {
                   onBlur={formik.handleBlur}
                 >
                   {Array.isArray(states) &&
-                  states.map((state) => (
-                    <MenuItem key={state} value={state}>
-                      {state}
-                    </MenuItem>
-                  ))}
+                    states.map((state) => (
+                      <MenuItem key={state} value={state}>
+                        {state}
+                      </MenuItem>
+                    ))}
                 </Select>
                 {formik.touched.state && formik.errors.state && (
                   <Typography variant="caption" color="error">
@@ -184,7 +195,7 @@ const StationForm = ({ open, onClose }) => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl
                 fullWidth
                 error={formik.touched.city && Boolean(formik.errors.city)}
@@ -202,11 +213,11 @@ const StationForm = ({ open, onClose }) => {
                   disabled={!formik.values.state}
                 >
                   {Array.isArray(states) &&
-                  cities.map((city) => (
-                    <MenuItem key={city} value={city}>
-                      {city}
-                    </MenuItem>
-                  ))}
+                    cities.map((city) => (
+                      <MenuItem key={city} value={city}>
+                        {city}
+                      </MenuItem>
+                    ))}
                 </Select>
                 {formik.touched.city && formik.errors.city && (
                   <Typography variant="caption" color="error">
@@ -216,7 +227,7 @@ const StationForm = ({ open, onClose }) => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth label="PIN Code" name="pincode"
                 value={formik.values.pincode}
@@ -228,6 +239,23 @@ const StationForm = ({ open, onClose }) => {
                   startAdornment: (
                     <InputAdornment position="start">
                       <PinDrop color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth label="GST Number" name="gst"
+                value={formik.values.gst}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.gst && Boolean(formik.errors.gst)}
+                helperText={formik.touched.gst && formik.errors.gst}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <CurrencyRupeeIcon color="action" />
                     </InputAdornment>
                   ),
                 }}

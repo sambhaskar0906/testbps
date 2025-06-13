@@ -477,6 +477,7 @@ const VehicleForm = () => {
                         type="submit"
                         variant="contained"
                         sx={{ backgroundColor: "#004C99" }}
+                        disabled={!formik.isValid || formik.isSubmitting}
                     >
                         Submit
                     </Button>

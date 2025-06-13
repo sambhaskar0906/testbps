@@ -389,7 +389,7 @@ const CustomerForm = () => {
             </Grid>
 
             {/* Submit Button */}
-            <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Grid size={{ xs: 12 }} sx={{ display: 'flex', justifyContent: 'center' }}>
               <Button
                 type="submit"
                 variant="contained"

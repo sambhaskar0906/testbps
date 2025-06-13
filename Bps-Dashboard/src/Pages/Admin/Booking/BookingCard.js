@@ -43,8 +43,6 @@ import { bookingRequestCount, activeBookingCount, cancelledBookingCount, fetchBo
 import SendIcon from '@mui/icons-material/Send';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import SlipModal from "../../../Components/SlipModal";
-
-
 const createData = (id, orderby, date, namep, pickup, named, drop, contact) => ({
   id,
   orderby,
@@ -111,16 +109,14 @@ const BookingCard = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedList, setSelectedList] = useState("request");
   const [bookings, setBookings] = useState([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState(null);
   const dispatch = useDispatch();
-  // const [openSlip, setOpenSlip] = useState(false);
-  // const [selectedBooking, setSelectedBooking] = useState(null);
-  const { list: bookingList, requestCount, activeDeliveriesCount, cancelledDeliveriesCount, totalRevenue } = useSelector(state => state.bookings);
+  const { list: bookingList, revenueList: revenueData = [], requestCount, activeDeliveriesCount, cancelledDeliveriesCount, totalRevenue } = useSelector(state => state.bookings);
   const openSlip = useSelector((state) => state.bookings.viewedBooking !== null);
   const booking = useSelector((state) => state.bookings.viewedBooking);
-
   useEffect(() => {
     if (bookingList && Array.isArray(bookingList)) {
       setBookings(bookingList);
@@ -132,7 +128,26 @@ const BookingCard = () => {
     dispatch(bookingRequestCount());
     dispatch(activeBookingCount());
     dispatch(cancelledBookingCount());
+    dispatch(revenueList());
   }, [dispatch])
+  useEffect(() => {
+    switch (selectedList) {
+      case "request":
+        dispatch(fetchBookingsByType('request'));
+        break;
+      case "active":
+        dispatch(fetchBookingsByType('active'));
+        break;
+      case "cancelled":
+        dispatch(fetchBookingsByType('cancelled'));
+        break;
+      case "revenue":
+        dispatch(revenueList());
+        break;
+      default:
+        break;
+    }
+  }, [selectedList, dispatch]);
   const handleAdd = () => {
     navigate("/booking/new");
   };
@@ -141,10 +156,14 @@ const BookingCard = () => {
 
   const displayHeadCells = isRevenueCardActive ? revenueHeadCells : headCells;
 
-  const handleCardClick = (type, route, cardId) => {
+  const handleCardClick = (type, cardId) => {
     setActiveCard(cardId);
-    dispatch(fetchBookingsByType(type));
-    if (route) navigate(route);
+    setSelectedList(type);
+    if (type === 'revenue') {
+      dispatch(revenueList());
+    } else {
+      dispatch(fetchBookingsByType(type));
+    }
   };
 
   const handleShare = (bookingId) => {
@@ -180,8 +199,8 @@ const BookingCard = () => {
     navigate(`/editbooking/${bookingId}`);
   };
 
-  const handleDeleteClick = (row) => {
-    setBookingToDelete(row);
+  const handleDeleteClick = (bookingId) => {
+    setBookingToDelete(bookingId);
     setDeleteDialogOpen(true);
   };
   const handleCancel = (bookingId) => {
@@ -189,8 +208,8 @@ const BookingCard = () => {
     window.location.reload();
   }
 
-  const handleDeleteConfirm = (bookingId) => {
-    dispatch(deleteBooking(bookingId))
+  const handleDeleteConfirm = () => {
+    dispatch(deleteBooking(bookingToDelete))
     setDeleteDialogOpen(false);
     setBookingToDelete(null);
   };
@@ -199,8 +218,6 @@ const BookingCard = () => {
     setDeleteDialogOpen(false);
     setBookingToDelete(null);
   };
-
-
   const handleSlipClick = (bookingId) => {
     dispatch(viewBookingById(bookingId));
   };
@@ -208,17 +225,28 @@ const BookingCard = () => {
   const handleCloseSlip = () => {
     dispatch(clearViewedBooking());
   };
+  const filteredRows = (
+    isRevenueCardActive
+      ? (Array.isArray(revenueData)
+        ? revenueData.filter(row =>
+          (row.bookingId && row.bookingId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (row.pickup && row.pickup.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (row.drop && row.drop.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (row.revenue && row.revenue.toString().includes(searchTerm))
+        )
+        : [])
+      : (Array.isArray(bookingList)
+        ? bookingList.filter(row =>
+          (row.orderby && row.orderby.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (row.namep && row.namep.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (row.named && row.named.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (row.pickup && row.pickup.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (row.drop && row.drop.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (row.contact && row.contact.includes(searchTerm))
+        )
+        : [])
+  );
 
-  const filteredRows = Array.isArray(bookingList) ? bookingList.filter(
-    (row) =>
-      (row.orderby && row.orderby.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (row.namep && row.namep.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (row.named && row.named.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (row.pickup && row.pickup.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (row.drop && row.drop.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (row.contact && row.contact.includes(searchTerm))
-  ) : []
-    ;
   const cardData = [
     {
       id: 1,
@@ -253,7 +281,7 @@ const BookingCard = () => {
       duration: "100% (30 Days)",
       title: "Revenue",
       icon: <AccountBalanceWalletIcon fontSize="large" />,
-      type: "revnue",
+      type: "revenue"
     },
   ];
 
@@ -296,7 +324,7 @@ const BookingCard = () => {
             sx={{ minWidth: 220, flex: 1, display: "flex", borderRadius: 2 }}
           >
             <Card
-              onClick={() => handleCardClick(card.type, card.route, card.id)}
+              onClick={() => handleCardClick(card.type, card.id)}
               sx={{
                 flex: 1,
                 cursor: "pointer",
@@ -422,7 +450,7 @@ const BookingCard = () => {
                         <TableCell>{row.date}</TableCell>
                         <TableCell>{row.pickup}</TableCell>
                         <TableCell>{row.drop}</TableCell>
-                        <TableCell>{row.revenue ?? "-"}</TableCell>
+                        <TableCell>{row.revenue}</TableCell>
                         <TableCell>
                           <Box sx={{ display: "flex", gap: 1 }}>
                             <IconButton
@@ -468,7 +496,7 @@ const BookingCard = () => {
                               size="small"
                               color="primary"
                               onClick={() => handleCancel(row.bookingId)}
-                              title="Cancel"
+                              title="CancelScheduleSend"
                             >
                               <CancelScheduleSendIcon fontSize="small" />
                             </IconButton>
@@ -483,7 +511,7 @@ const BookingCard = () => {
                             <IconButton
                               size="small"
                               color="primary"
-                              title="Share"
+                              title="share"
                               onClick={() => handleShare(row.bookingId)}
                             >
                               <SendIcon fontSize="small" />
@@ -497,13 +525,12 @@ const BookingCard = () => {
                               <ReceiptIcon fontSize="small" />
                             </IconButton>
                           </Box>
+                          <SlipModal
+                            open={openSlip}
+                            handleClose={handleCloseSlip}
+                            bookingData={booking}
+                          />
                         </TableCell>
-
-                        <SlipModal
-                          open={openSlip}
-                          handleClose={handleCloseSlip}
-                          bookingData={booking}
-                        />
                       </>
                     )}
                   </TableRow>
@@ -531,7 +558,7 @@ const BookingCard = () => {
       <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
-          Are you sure you want to delete booking #{bookingToDelete?.id}?
+          Are you sure you want to delete booking {bookingToDelete}?
         </DialogContent>
         <DialogActions>
           <Button onClick={handleDeleteCancel}>Cancel</Button>

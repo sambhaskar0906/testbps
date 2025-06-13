@@ -135,7 +135,7 @@ const SlipModal = ({ open, handleClose, bookingData }) => {
     const {
         bookingId, bookingDate, fromCity, toCity, firstName, mobile,
         freight, ins_vpp, cgst, sgst, igst, grandTotal, items, endStation,
-        senderName, receiverName
+        senderName, receiverName, contact
     } = bookingData;
 
     return (
@@ -146,13 +146,13 @@ const SlipModal = ({ open, handleClose, bookingData }) => {
                     <Box textAlign="center" mb={2}>
                         <Typography variant="h5" fontWeight="bold" color="primary">Bharat Parcel Services</Typography>
                         <Typography variant="subtitle2" color="text.secondary">
-                            332, Kucha Ghasiram, Chandni Chowk, Fatehpuri, Delhi-6
+                            {bookingData.startStation.address}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            Ph: 45138699, 9318407386
+                            Ph: {bookingData.startStation.contact}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                            GST: 07AAFCB1234R1Z1 | PAN: AAFCB1234R
+                            GST: {bookingData.startStation.gst} | PAN: AAFCB1234R
                         </Typography>
                     </Box>
 

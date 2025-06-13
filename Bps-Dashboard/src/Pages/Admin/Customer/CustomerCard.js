@@ -93,6 +93,7 @@ const CustomerCard = ({ onSelect }) => {
   const handleDelete = (customerId) => {
     if (window.confirm("Are you sure you want to delete this customer ?")) {
       dispatch(deleteCustomer(customerId));
+      window.location.reload();
     }
   }
 

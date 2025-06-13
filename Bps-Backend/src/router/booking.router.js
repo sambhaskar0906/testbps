@@ -18,7 +18,8 @@ import {
   approveThirdPartyBookingRequest,
   rejectThirdPartyBookingRequest,
   sendBookingEmailById,
-  customerWiseData
+  customerWiseData,
+  overallBookingSummary
 } from '../controller/booking.controller.js';
 
 import { parseFormData } from "../middleware/multerParser.middleware.js";
@@ -33,8 +34,8 @@ router.get('/bookings/count/cancelled', verifyJwt, getCancelledBookingsCount);
 router.get('/bookings/revenue/total', verifyJwt, getTotalRevenue);
 router.post('/send-booking-email', sendBookingEmail);
 router.post('/send-booking-email/:bookingId', sendBookingEmailById);
-router.patch('/reject/:bookingId',rejectThirdPartyBookingRequest);
-router.get('/summary',customerWiseData);
+router.patch('/reject/:bookingId', rejectThirdPartyBookingRequest);
+router.get('/summary', customerWiseData);
 //  CRUD routes AFTER static routes
 router.post('/public', createPublicBooking);
 router.get("/pending", verifyJwt, getPendingThirdPartyBookings);
@@ -45,5 +46,6 @@ router.patch('/:bookingId/cancel', cancelBooking);
 router.get('/:id', viewBooking);           // View by bookingId (not _id!)
 router.put('/:id', updateBooking);         // Update by bookingId
 router.delete('/:id', deleteBooking);      // Delete by bookingId
+router.post('/overallBookingSummary', overallBookingSummary);
 
 export default router;

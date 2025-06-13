@@ -10,6 +10,7 @@ import {
   Typography,
   InputAdornment,
 } from "@mui/material";
+import { ArrowBack } from '@mui/icons-material';
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import SearchIcon from "@mui/icons-material/Search";
@@ -216,6 +217,14 @@ const EditBooking = () => {
             <EffectSyncCities values={values} dispatch={dispatch} setSenderCities={setSenderCities}
               setReceiverCities={setReceiverCities} />
             <EffectSyncTotals values={values} setFieldValue={setFieldValue} />
+            <Button
+              variant="outlined"
+              startIcon={<ArrowBack />}
+              onClick={() => navigate(-1)}
+              sx={{ mr: 2 }}
+            >
+              Back
+            </Button>
             <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 6 }}>

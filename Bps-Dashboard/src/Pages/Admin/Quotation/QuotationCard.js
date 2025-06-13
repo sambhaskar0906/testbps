@@ -37,12 +37,13 @@ import { useSelector, useDispatch } from "react-redux";
 import {
   fetchBookingRequest,
   fetchActiveBooking,
-  fetchCancelledBooking, deleteBooking, sendWhatsAppMsg, sendBookingEmail, revenueList
+  fetchCancelledBooking, deleteBooking, sendWhatsAppMsg, sendBookingEmail, revenueList, viewBookingById, clearViewedBooking
 } from "../../../features/quotation/quotationSlice";
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Snackbar, Alert } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import QSlipModal from "../../../Components/QSlipModal";
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) return -1;
   if (b[orderBy] > a[orderBy]) return 1;
@@ -75,6 +76,15 @@ const headCells = [
   { id: "contact", label: "Contact", sortable: false },
   { id: "action", label: "Action", sortable: false },
 ];
+const revenueHeadCells = [
+  { id: "sno", label: "S.No", sortable: false },
+  { id: "bookingId", label: "Booking ID", sortable: true },
+  { id: "date", label: "Date", sortable: true },
+  { id: "pickup", label: "Pick Up", sortable: false },
+  { id: "drop", label: "Drop", sortable: false },
+  { id: "revenue", label: "Revenue (in Rupees)", sortable: false },
+  { id: "action", label: "Action", sortable: false },
+];
 
 const QuotationCard = () => {
   const theme = useTheme();
@@ -83,7 +93,7 @@ const QuotationCard = () => {
 
   const cardColor = "#0155a5";
   const cardLightColor = "#e6f0fa";
-
+  const [localModalOpen, setLocalModalOpen] = useState(false);
   const [activeCard, setActiveCard] = useState("request");
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState("senderName");
@@ -93,8 +103,10 @@ const QuotationCard = () => {
   const [selectedList, setSelectedList] = useState("request");
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
-  const { list: bookingList = [], requestCount, activeDeliveriesCount, cancelledDeliveriesCount, totalRevenue } =
+  const { list: bookingList = [], revenueList: revenueData = [], requestCount, activeDeliveriesCount, cancelledDeliveriesCount, totalRevenue } =
     useSelector((state) => state.quotations);
+
+  const booking = useSelector((state) => state.quotations.viewedBooking);
   useEffect(() => {
     dispatch(fetchBookingRequest());
     dispatch(fetchCancelledBooking());
@@ -112,7 +124,7 @@ const QuotationCard = () => {
       case "cancelled":
         dispatch(fetchCancelledBooking());
         break;
-      case "reveune":
+      case "revenue":
         dispatch(revenueList());
         break;
       default:
@@ -123,11 +135,13 @@ const QuotationCard = () => {
   const handleAdd = () => {
     navigate("/quotationform");
   };
-
-  const handleCardClick = (type, route) => {
+  const isRevenueCardActive = activeCard === "revenue";
+  const displayHeadCells = isRevenueCardActive ? revenueHeadCells : headCells;
+  const handleCardClick = (type, route, cardId) => {
+    setActiveCard(cardId);
     setSelectedList(type);
     setActiveCard(type);
-    navigate(route);
+    if (route) navigate(route);
   };
 
   const handleRequestSort = (property) => {
@@ -153,8 +167,25 @@ const QuotationCard = () => {
     dispatch(sendBookingEmail(bookingId))
     setOpenSnackbar(true);
   }
-  const filteredRows = Array.isArray(bookingList)
-    ? bookingList.filter((row) => {
+  const handleSlipClick = (bookingId) => {
+    dispatch(viewBookingById(bookingId))
+      .unwrap()
+      .then(() => {
+        setLocalModalOpen(true);
+      })
+      .catch((error) => {
+        console.error("Error loading booking:", error);
+      });
+  };
+
+  const handleCloseSlip = () => {
+    setLocalModalOpen(false);
+    dispatch(clearViewedBooking());
+  };
+  const dataSource = selectedList === "revenue" ? revenueData : bookingList;
+
+  const filteredRows = Array.isArray(dataSource)
+    ? dataSource.filter((row) => {
       return (
         row?.senderName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         row?.receiverName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -163,6 +194,7 @@ const QuotationCard = () => {
       );
     })
     : [];
+
 
   const emptyRows = Math.max(0, (1 + page) * rowsPerPage - filteredRows.length);
 
@@ -198,7 +230,7 @@ const QuotationCard = () => {
       value: totalRevenue,
       subtitle: "Total Revenue",
       duration: "100% (30 Days)",
-      type: "reveune",
+      type: "revenue",
       icon: <AccountBalanceWalletIcon fontSize="large" />,
     },
   ];
@@ -230,7 +262,7 @@ const QuotationCard = () => {
         {cardData.map((card) => (
           <Grid item key={card.id} sx={{ minWidth: 220, flex: 1, display: "flex", borderRadius: 2 }}>
             <Card
-              onClick={() => handleCardClick(card.type, card.route)}
+              onClick={() => handleCardClick(card.type, card.route, card.id)}
               sx={{
                 flex: 1,
                 cursor: "pointer",
@@ -306,7 +338,7 @@ const QuotationCard = () => {
           <Table>
             <TableHead sx={{ backgroundColor: "#1565c0" }}>
               <TableRow>
-                {headCells.map((headCell) => (
+                {displayHeadCells.map((headCell) => (
                   <TableCell
                     key={headCell.id}
                     sx={{ fontWeight: "bold", color: "#fff" }}
@@ -329,53 +361,79 @@ const QuotationCard = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {Array.isArray(bookingList) && stableSort(bookingList, getComparator(order, orderBy))
+              {Array.isArray(dataSource) && stableSort(dataSource, getComparator(order, orderBy))
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((row, index) => (
                   <TableRow key={row._id || index} hover>
-                    <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                    <TableCell>{row.orderBy}</TableCell>
-                    <TableCell>{row.Date}</TableCell>
-                    <TableCell>{row.Name}</TableCell>
-                    <TableCell>{row.pickup}</TableCell>
-                    <TableCell>{row["Name (Drop)"]}</TableCell>
-                    <TableCell>{row.drop}</TableCell>
-                    <TableCell>{row.Contact}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: "flex", gap: 1 }}>
-                        <IconButton size="small" color="primary" onClick={() => handleView(row['Booking ID'])} title="View">
-                          <VisibilityIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton size="small" color="primary" onClick={() => handleUpdate(row['Booking ID'])}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          title="CancelScheduleSend"
-                        >
-                          <CancelScheduleSendIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton size="small" color="error" onClick={() => {
-                          handleDelete(row['Booking ID']);
-                        }}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton size="small" color="primary">
-                          <SendIcon fontSize="small" onClick={() => { handleSend(row['Booking ID']) }} />
-                        </IconButton>
-                      </Box>
-                      <Snackbar
-                        open={openSnackbar}
-                        autoHideDuration={3000}
-                        onClose={() => setOpenSnackbar(false)}
-                        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-                      >
-                        <Alert onClose={() => setOpenSnackbar(false)} severity="success" variant="filled" sx={{ width: '100%' }}>
-                          Share link sent via WhatsApp and Email!
-                        </Alert>
-                      </Snackbar>
-                    </TableCell>
+                    {isRevenueCardActive ? (
+                      <>
+                        <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                        <TableCell>{row.bookingId}</TableCell>
+                        <TableCell>{row.date}</TableCell>
+                        <TableCell>{row.pickup}</TableCell>
+                        <TableCell>{row.drop}</TableCell>
+                        <TableCell>{row.revenue ?? "-"}</TableCell>
+                        <TableCell>
+                          <Box sx={{ display: "flex", gap: 1 }}>
+                            <IconButton
+                              size="small"
+                              color="info"
+                              onClick={() => handleView(row['Booking ID'])}
+                              title="View"
+                            >
+                              <VisibilityIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </TableCell>
+                      </>
+                    ) : (
+                      <>
+
+                        <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                        <TableCell>{row.orderBy}</TableCell>
+                        <TableCell>{row.Date}</TableCell>
+                        <TableCell>{row.Name}</TableCell>
+                        <TableCell>{row.pickup}</TableCell>
+                        <TableCell>{row["Name (Drop)"]}</TableCell>
+                        <TableCell>{row.drop}</TableCell>
+                        <TableCell>{row.Contact}</TableCell>
+                        <TableCell>
+                          <Box sx={{ display: "flex", gap: 1 }}>
+                            <IconButton size="small" color="primary" onClick={() => handleView(row['Booking ID'])} title="View">
+                              <VisibilityIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton size="small" color="primary" onClick={() => handleUpdate(row['Booking ID'])}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              title="CancelScheduleSend"
+                            >
+                              <CancelScheduleSendIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton size="small" color="error" onClick={() => {
+                              handleDelete(row['Booking ID']);
+                            }}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton size="small" color="primary">
+                              <SendIcon fontSize="small" onClick={() => { handleSend(row['Booking ID']) }} />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              color="secondary"
+                              onClick={() => handleSlipClick(row['Booking ID'])}
+                              title="Slip"
+                            >
+                              <ReceiptIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+
+
+                        </TableCell>
+                      </>
+                    )}
                   </TableRow>
                 ))}
               {emptyRows > 0 && (
@@ -395,6 +453,21 @@ const QuotationCard = () => {
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
         </TableContainer>
+        <QSlipModal
+          open={localModalOpen}
+          handleClose={handleCloseSlip}
+          bookingData={booking}
+        />
+        <Snackbar
+          open={openSnackbar}
+          autoHideDuration={3000}
+          onClose={() => setOpenSnackbar(false)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert onClose={() => setOpenSnackbar(false)} severity="success" variant="filled" sx={{ width: '100%' }}>
+            Share link sent via WhatsApp and Email!
+          </Alert>
+        </Snackbar>
       </Box>
     </Box>
   );

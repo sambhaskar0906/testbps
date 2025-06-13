@@ -31,7 +31,7 @@ const CustomerSearch = ({ onCustomerSelect }) => {
         validationSchema: Yup.object({
             customerSearch: Yup.string().required('Required'),
         }),
-        onSubmit: () => {},
+        onSubmit: () => { },
     });
 
     const { values, touched, errors, handleChange, handleBlur } = formik;
@@ -52,7 +52,7 @@ const CustomerSearch = ({ onCustomerSelect }) => {
         } else {
             setNotFound(true);
             if (onCustomerSelect) {
-                onCustomerSelect(null); // clear in parent
+                onCustomerSelect(null);
             }
         }
     };
@@ -64,7 +64,7 @@ const CustomerSearch = ({ onCustomerSelect }) => {
     return (
         <Box>
             <Grid container spacing={2}>
-                <Grid item xs={12} sm={9}>
+                <Grid size={{ xs: 12, md: 9 }}>
                     <TextField
                         fullWidth
                         label="Search Customer (by Contact No. or Email)"
@@ -93,7 +93,7 @@ const CustomerSearch = ({ onCustomerSelect }) => {
                         }}
                     />
                 </Grid>
-                <Grid item xs={12} sm={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                     <Button fullWidth onClick={handleRegister} variant="contained" sx={{ mt: { xs: 2, sm: 0 } }}>
                         Registration
                     </Button>
