@@ -1,0 +1,178 @@
+import React, { useState, useEffect } from 'react';
+import {
+    Box, Typography, Grid, TextField, Paper, Stack,
+    Button,
+} from '@mui/material';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import { useDispatch, useSelector } from 'react-redux'
+import { fetchOverallBookingSummary } from "../../../features/booking/bookingSlice"
+import jsPDF from "jspdf";
+
+const BookingReport = () => {
+    const [fromDate, setFromDate] = useState(null);
+    const [endDate, setEndDate] = useState(null);
+    const [data, setData] = useState([]);
+    const dispatch = useDispatch();
+    const { list3: summary } = useSelector((state) => state.bookings);
+    const handleSubmit = () => {
+        if (!fromDate || !endDate) {
+            alert("Please select both dates");
+            return;
+        }
+
+        dispatch(fetchOverallBookingSummary({
+            fromDate: fromDate.toISOString().split("T")[0],
+            endDate: endDate.toISOString().split("T")[0],
+        }));
+    };
+
+    const apiData = summary
+        ? [{
+            id: 1,
+            bookingCount: summary.totalBookings || 0,
+            billAmount: summary.billTotal || 0,
+            taxAmount: summary.taxAmount || 0,
+            total: (summary.billTotal || 0) + (summary.taxAmount || 0)
+        }]
+        : [];
+
+    return (
+        <Box p={3} bgcolor="#f9fafe" minHeight="100vh">
+            <Grid container alignItems={'center'}>
+                <Grid size={{ xs: 6 }}>
+                    <Typography variant="h4" fontWeight="bold" color="primary" mb={4} display="flex" alignItems="center" gap={1}>
+                        <CalendarMonthIcon fontSize="large" />
+                        Booking Report
+                    </Typography>
+                </Grid>
+                <Grid size={{ xs: 6 }} display="flex" justifyContent="flex-end">
+                    <Button
+                        variant="contained"
+                        onClick={() => {
+                            if (!summary) {
+                                alert("No data to download");
+                                return;
+                            }
+
+                            const doc = new jsPDF();
+
+                            // Header: Bharat Parcel Services
+                            doc.setFontSize(22);
+                            doc.setTextColor(40, 60, 120);
+                            doc.setFont("helvetica", "bold");
+                            doc.text("Bharat Parcel Services", 14, 20);
+
+                            // Subheading
+                            doc.setFontSize(14);
+                            doc.setFont("helvetica", "normal");
+                            doc.setTextColor(100);
+                            doc.text("Booking Summary Report", 14, 30);
+
+                            // Date Range
+                            const from = fromDate?.toISOString().split("T")[0] || "N/A";
+                            const to = endDate?.toISOString().split("T")[0] || "N/A";
+
+                            doc.setFontSize(12);
+                            doc.setTextColor(80);
+                            doc.text(`From: ${from}`, 14, 40);
+                            doc.text(`To: ${to}`, 100, 40);
+
+                            // Draw a line separator
+                            doc.setDrawColor(0);
+                            doc.line(14, 45, 195, 45);
+
+                            // Data Section
+                            const labels = ["Booking Count", "Bill Amount", "Tax Amount", "Total Amount"];
+                            const values = [
+                                summary.totalBookings || 0,
+                                `₹${summary.billTotal || 0}`,
+                                `₹${summary.taxAmount || 0}`,
+                                `₹${(summary.billTotal || 0) + (summary.taxAmount || 0)}`,
+                            ];
+
+                            // Draw each row
+                            doc.setFontSize(13);
+                            labels.forEach((label, i) => {
+                                const y = 60 + i * 12;
+                                doc.setTextColor(60);
+                                doc.setFont("helvetica", "bold");
+                                doc.text(label, 20, y);
+                                doc.setTextColor(30, 30, 30);
+                                doc.setFont("helvetica", "normal");
+                                doc.text(values[i].toString(), 120, y);
+                            });
+
+                            // Footer line
+                            doc.setDrawColor(200);
+                            doc.line(14, 120, 195, 120);
+
+                            // Optional Footer text
+                            doc.setFontSize(10);
+                            doc.setTextColor(150);
+                            doc.text("Generated by Bharat Parcel Services Dashboard", 14, 130);
+
+                            // Save the PDF
+                            const fileName = `booking_report_${from}_to_${to}.pdf`;
+                            doc.save(fileName);
+                        }}
+                    >
+                        Download PDF
+                    </Button>
+                </Grid>
+            </Grid>
+
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 3, mb: 4 }}>
+                <Grid container spacing={2} alignItems={'center'}>
+                    {[{ label: "From Date", value: fromDate, set: setFromDate }, { label: "End Date", value: endDate, set: setEndDate }].map((item, i) => (
+                        <Grid size={{ xs: 12, md: 4 }} key={i}>
+                            <LocalizationProvider dateAdapter={AdapterDateFns}>
+                                <DatePicker
+                                    label={item.label}
+                                    value={item.value}
+                                    onChange={item.set}
+                                    renderInput={(params) => <TextField fullWidth {...params} />}
+                                />
+                            </LocalizationProvider>
+                        </Grid>
+                    ))}
+
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <Button variant="contained" fullWidth onClick={handleSubmit}>Submit</Button>
+                    </Grid>
+                </Grid>
+            </Paper>
+
+            {apiData.map(({ id, bookingCount, billAmount, taxAmount, total }) => (
+                <Paper
+                    key={id}
+                    elevation={3}
+                    sx={{
+                        p: 3,
+                        mb: 3,
+                        borderRadius: 3,
+                        background: "linear-gradient(135deg, #e0f7fa 0%, #e3f2fd 100%)",
+                    }}
+                >
+                    <Grid container spacing={3}>
+                        {[["📦 Booking Count", bookingCount], ["🧾 Bill Amount", billAmount], ["💰 Tax Amount", taxAmount], ["🧮 Total Amount", total]].map(
+                            ([label, value], idx) => (
+                                <Grid size={{ xs: 12, md: 3 }} key={idx}>
+                                    <Stack spacing={0.5}>
+                                        <Typography variant="body2" color="textSecondary">{label}</Typography>
+                                        <Typography variant="h6" fontWeight={label.includes("Total") ? 'bold' : 'medium'} color={label.includes("Total") ? 'green' : 'black'}>
+                                            {label.includes("Booking Count") ? value : `₹${value.toLocaleString()}`}
+                                        </Typography>
+                                    </Stack>
+                                </Grid>
+                            )
+                        )}
+                    </Grid>
+                </Paper>
+            ))}
+        </Box>
+    );
+};
+
+export default BookingReport;
