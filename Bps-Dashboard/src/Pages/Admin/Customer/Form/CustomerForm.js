@@ -42,6 +42,7 @@ const CustomerForm = () => {
     city: Yup.string().required('City is required'),
     district: Yup.string().required('District is required'),
     gstNumber: Yup.string().required('GST is required'),
+    stateCode: Yup.string().required('StateCode is required'),
     pincode: Yup.string()
       .required('Pincode is required')
       .matches(/^[0-9]{6}$/, 'Pincode must be 6 digits'),
@@ -57,6 +58,7 @@ const CustomerForm = () => {
       middleName: '',
       lastName: '',
       contactNumber: '',
+      stateCode: '',
       emailId: '',
       address: '',
       state: '',
@@ -303,6 +305,22 @@ const CustomerForm = () => {
                         type="number"
                       />
                     </Grid>
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                      <TextField
+                        fullWidth
+                        label="StateCode *"
+                        variant="outlined"
+                        name="stateCode"
+                        value={formik.values.stateCode}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.stateCode && Boolean(formik.errors.stateCode)}
+                        helperText={formik.touched.stateCode && formik.errors.stateCode}
+                        size="small"
+                        type="String"
+                      />
+                    </Grid>
+
                     <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                       <TextField
                         fullWidth

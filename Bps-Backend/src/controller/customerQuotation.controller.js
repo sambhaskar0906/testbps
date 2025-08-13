@@ -5,7 +5,7 @@ import nodemailer from 'nodemailer';
 import Quotation from "../model/customerQuotation.model.js";
 import { Customer } from "../model/customer.model.js";
 import manageStation from "../model/manageStation.model.js";
-
+import { parse } from 'date-fns';
 const formatQuotations = (quotations) => {
   return quotations.map((q, index) => ({
     "S.No.": index + 1,
@@ -168,6 +168,46 @@ export const createQuotation = asyncHandler(async (req, res, next) => {
 });
 
 
+export const getBookingSummaryByDate = async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.body;
+    const user = req.user;
+
+    if (!fromDate || !toDate) {
+      return res.status(400).json({ message: "Both fromDate and toDate are required" });
+    }
+
+    // ✅ Parse dd-MM-yyyy format correctly
+    const from = parse(fromDate, 'dd-MM-yyyy', new Date());
+    const to = parse(toDate, 'dd-MM-yyyy', new Date());
+    to.setHours(23, 59, 59, 999); // Include entire 'toDate' day
+
+    // 🧠 Build query
+    const query = {
+      quotationDate: { $gte: from, $lte: to }
+    };
+
+    if (user.role === "supervisor") {
+      query.createdByUser = user._id;
+    }
+
+    const bookings = await Quotation.find(query).sort({ bookingDate: -1 });
+
+    const bookingSummaries = bookings.map((booking) => ({
+      ...booking.toObject(),
+      itemsCount: booking.items?.length || 0,
+    }));
+
+    res.status(200).json({
+      message: `Bookings from ${fromDate} to ${toDate}`,
+      total: bookingSummaries.length,
+      bookings: bookingSummaries,
+    });
+  } catch (error) {
+    console.error("Error fetching bookings by date:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
 
 
 

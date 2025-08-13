@@ -22,7 +22,7 @@ import CustomerSearch from "../../../../Components/CustomerSearch";
 import { ArrowBack } from '@mui/icons-material';
 import CheckCircle from '@mui/icons-material/CheckCircle';
 
-const toPay = [' to pay', 'paid', 'none'];
+const toPay = ['toPay', 'paid', 'none'];
 
 const generateUniqueId = (prefix, existingSet, setFunction) => {
   let newId;
@@ -74,7 +74,8 @@ const generateInitialValues = () => {
         refNo: refNo,
         insurance: "",
         vppAmount: "",
-        toPayPaid: "",
+        toPay: "",
+        // toPayPaid: "",
         weight: "",
         amount: "",
       },

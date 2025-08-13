@@ -11,7 +11,7 @@ import { previewInvoices, generateInvoices } from '../../../features/customerLed
 
 const LedgerCard = () => {
     const dispatch = useDispatch();
-    const [emailId, setEmail] = useState('');
+    const [customerName, setCustomerName] = useState('');
     const [orderType, setOrderType] = useState('');
     const [fromDate, setFromDate] = useState(dayjs());
     const [toDate, setToDate] = useState(dayjs());
@@ -39,7 +39,13 @@ const LedgerCard = () => {
 
             <Grid container spacing={2} alignItems="center">
                 <Grid item xs={12} sm={4}>
-                    <TextField fullWidth label="Email" value={emailId} onChange={(e) => setEmail(e.target.value)} variant="outlined" />
+                    <TextField
+                        fullWidth
+                        label="Customer Name"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        variant="outlined"
+                    />
                 </Grid>
 
                 <Grid item xs={12} sm={4}>
@@ -77,7 +83,7 @@ const LedgerCard = () => {
                 <Grid item xs={12}>
                     <Button variant="contained" color="primary" onClick={() => {
                         dispatch(previewInvoices({
-                            emailId,
+                            name: customerName,
                             orderType,
                             fromDate: fromDate.format('YYYY-MM-DD'),
                             endDate: toDate.format('YYYY-MM-DD'),

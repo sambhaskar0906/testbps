@@ -77,6 +77,7 @@ const CustomerView = () => {
   useEffect(() => {
     if (customerId) {
       dispatch(viewCustomerById(customerId));
+      console.log("data", viewCustomerById)
     }
     return () => {
       dispatch(clearViewedCustomer());
@@ -130,6 +131,7 @@ const CustomerView = () => {
                   <StyledTextField label="District" value={form?.district} />
                   <StyledTextField label="Pincode" value={form?.pincode} />
                   <StyledTextField label="GST" value={form?.gstNumber} />
+                  <StyledTextField label="State Code" value={form?.stateCode} />
                 </Grid>
               </CardContent>
             </Card>

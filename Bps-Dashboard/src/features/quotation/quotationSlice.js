@@ -104,45 +104,56 @@ export const updateBookingById = createAsyncThunk(
 
 export const revenueList = createAsyncThunk(
   'revenueList/booking', async (_, thunkApi) => {
-  try {
-    const res = await axios.get(`${BASE_URL}/revenue-list`);
-    return {
-      totalRevenue: res.data.totalRevenue,
-      revenueList: res.data.data
+    try {
+      const res = await axios.get(`${BASE_URL}/revenue-list`);
+      return {
+        totalRevenue: res.data.totalRevenue,
+        revenueList: res.data.data
+      }
+    }
+    catch (err) {
+      return thunkApi.rejectWithValue(err.response?.data?.message || 'failed to view totalReveunue')
     }
   }
-  catch (err) {
-    return thunkApi.rejectWithValue(err.response?.data?.message || 'failed to view totalReveunue')
-  }
-}
 
 )
 export const sendBookingEmail = createAsyncThunk(
-  'sendBooking/mail',async(bookingId,thunkApi)=>{
-    try{
+  'sendBooking/mail', async (bookingId, thunkApi) => {
+    try {
       const res = await axios.get(`${BASE_URL}/send-Booking-Email/${bookingId}`);
       return res.data;
     }
-    catch(err)
-    {
+    catch (err) {
       return thunkApi.rejectWithValue(err.response?.data?.message || 'Failed to send booking Id');
     }
   }
 )
 export const sendWhatsAppMsg = createAsyncThunk(
-  'bookingMail/whatsApp',async(bookingId,thunkApi)=>{
-    try{
+  'bookingMail/whatsApp', async (bookingId, thunkApi) => {
+    try {
       const res = await axios.post(`http://localhost:8000/api/whatsapp/send-booking-Quotation/${bookingId}`);
       return res.data;
     }
-    catch(err)
-    {
+    catch (err) {
       return thunkApi.rejectWithValue(err?.response?.data?.message);
     }
   }
 )
+export const getQuotationBookingSummaryByDate = createAsyncThunk(
+  'booking/getBookingSummary', async ({ fromDate, toDate }, thunkApi) => {
+    try {
+      const res = await axios.post(`${BASE_URL}/booking-summary-date`, { fromDate, toDate });
+      return res.data.bookings;
+    }
+    catch (err) {
+      return thunkApi.rejectWithValue(err.response?.data?.message || 'Failed to fetch data');
+    }
+
+  }
+)
 const initialState = {
   list: [],
+  list2: [],
   requestCount: 0,
   activeDeliveriesCount: 0,
   cancelledDeliveriesCount: 0,
@@ -303,29 +314,33 @@ const quotationSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      .addCase(sendBookingEmail.pending,(state)=>{
-        state.loading=true;
-        state.error=null
+      .addCase(sendBookingEmail.pending, (state) => {
+        state.loading = true;
+        state.error = null
       })
-      .addCase(sendBookingEmail.fulfilled,(state)=>{
-        state.loading=false;
-        state.error=null
+      .addCase(sendBookingEmail.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null
       })
-      .addCase(sendBookingEmail.rejected,(state,action)=>{
-        state.loading=false;
-        state.error=action.payload
+      .addCase(sendBookingEmail.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload
       })
-      .addCase(sendWhatsAppMsg.pending,(state)=>{
-        state.loading=true;
-        state.error=null
+      .addCase(sendWhatsAppMsg.pending, (state) => {
+        state.loading = true;
+        state.error = null
       })
-      .addCase(sendWhatsAppMsg.fulfilled,(state)=>{
-        state.loading=false;
-        state.error=null
+      .addCase(sendWhatsAppMsg.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null
       })
-      .addCase(sendWhatsAppMsg.rejected,(state,action)=>{
-        state.loading=false;
-        state.error=action.payload
+      .addCase(sendWhatsAppMsg.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload
+      })
+      .addCase(getQuotationBookingSummaryByDate.fulfilled, (state, action) => {
+        state.loading = false;
+        state.list2 = action.payload;
       })
 
   }

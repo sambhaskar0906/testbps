@@ -38,12 +38,13 @@ export const createCustomer = asyncHandler(async (req, res) => {
     idProof,
     pincode,
     gstNumber,
+    stateCode,
     status = "active",
     isBlacklisted = false,
   } = req.body;
 
   // Validate required fields
-  if ([firstName, lastName, emailId, address, state, city, idProof].some(field => typeof field === "string" && field.trim() === "")) {
+  if ([firstName, lastName, emailId, address, state, city, idProof, stateCode].some(field => typeof field === "string" && field.trim() === "")) {
     throw new ApiError(400, "All required fields must be provided.");
   }
 
@@ -76,6 +77,7 @@ export const createCustomer = asyncHandler(async (req, res) => {
     customerProfilePhoto,
     pincode,
     gstNumber,
+    stateCode,
     createdBy: req.user._id,
   });
 

@@ -41,6 +41,9 @@ import ViewUser from '../Pages/Admin/Manage User/Form/ViewUser';
 import BookingReport from '../Pages/Admin/BookingReport/bookingReport';
 import { getTokenExpiration } from '../utils/auth';
 import ViewBookingByDate from '../Components/ViewBookingByDate';
+import PanddingList from '../Pages/Admin/PanddingList/PanddingList';
+import Cashbook from '../Pages/Admin/Cashbook/Cashbook';
+
 
 const MainRoute = () => {
     const location = useLocation();
@@ -133,7 +136,7 @@ const MainRoute = () => {
                 <Route path="/booking/new" element={<BookingForm />} />
                 <Route path="/booking/:bookingId" element={<ViewBooking />} />
                 <Route path="/editbooking/:bookingId" element={<EditBooking />} />
-                <Route path="/booking/day/:date" element={<ViewBookingByDate />} />
+                <Route path="/booking-summary/:fromDate/:toDate" element={<ViewBookingByDate />} />
 
 
                 {/* Quotation */}
@@ -142,8 +145,14 @@ const MainRoute = () => {
                 <Route path="/viewquotation/:bookingId" element={<ViewQuotation />} />
                 <Route path="/updatequotation/:bookingId" element={<EditQuotations />} />
 
+                {/* Pandding List */}
+                <Route path="/pandding-list" element={<PanddingList />} />
+
                 {/* Report */}
                 <Route path="/booking-report" element={<BookingReport />} />
+
+                {/* Cashbook */}
+                <Route path='/cashbook' element={<Cashbook />} />
 
                 {/* Users (Admin Only) */}
                 {role !== 'supervisor' && (

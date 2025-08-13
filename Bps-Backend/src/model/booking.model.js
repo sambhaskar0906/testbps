@@ -21,7 +21,7 @@ const ItemSchema = new mongoose.Schema({
   toPay: {
     type: String,
     required: true,
-    enum: ['pay', 'paid', 'none']
+    enum: ['toPay', 'paid', 'none']
   },
   weight: {
     type: Number,

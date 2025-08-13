@@ -12,6 +12,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import ContactPageIcon from '@mui/icons-material/ContactPage';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import EditNoteIcon from '@mui/icons-material/EditNote';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 
 export const sidebarItems = [
     { label: 'Dashboard', route: '/', icon: <DashboardIcon /> },
@@ -29,4 +30,6 @@ export const sidebarItems = [
     { label: 'Manage Expenses', route: '/expenses', icon: <EditNoteIcon /> },
     { label: 'Contact', route: '/contact', icon: <ContactPageIcon /> },
     { label: 'Booking Report', route: '/booking-report', icon: <BookOnlineIcon /> },
+    { label: 'Pending List', route: '/pandding-list', icon: <AccountBalanceIcon /> },
+    { label: 'Cashbook', route: '/cashbook', icon: <MenuBookIcon /> },
 ];

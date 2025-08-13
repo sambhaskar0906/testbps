@@ -18,10 +18,10 @@ export const registerUser = asyncHandler(async (req, res) => {
 
     if (req.files) {
       if (req.files['idProofPhoto']) {
-        userData.idProofPhoto = req.files['idProofPhoto'][0].path; // File path
+        userData.idProofPhoto = req.files['idProofPhoto'][0].path;
       }
       if (req.files['adminProfilePhoto']) {
-        userData.adminProfilePhoto = req.files['adminProfilePhoto'][0].path; // File path
+        userData.adminProfilePhoto = req.files['adminProfilePhoto'][0].path;
       }
     }
 

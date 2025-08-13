@@ -6,6 +6,7 @@ import { User } from '../model/user.model.js'
 import { sendBookingConfirmation } from './whatsappController.js'
 import { sendWhatsAppMessage } from '../services/whatsappServices.js'
 import { ApiResponse } from "../utils/ApiResponse.js"
+import { generateInvoicePDF } from '../utils/invoiceGenerator.js';
 async function resolveStation(name) {
   const station = await Station.findOne({ stationName: new RegExp(`^${name}$`, 'i') });
   if (!station) throw new Error(`Station "${name}" not found`);
@@ -114,6 +115,7 @@ export const viewBooking = async (req, res) => {
 
 
 export const createBooking = async (req, res) => {
+  console.log("Req", req.body);
   try {
     const user = req.user;
     const {
@@ -907,4 +909,375 @@ export const overallBookingSummary = async (req, res) => {
   }
 };
 
+export const getBookingSummaryByDate = async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.body;
+    const user = req.user;
+
+    if (!fromDate || !toDate) {
+      return res.status(400).json({ message: "Both fromDate and toDate are required" });
+    }
+
+    const parseDateString = (str) => {
+      const [day, month, year] = str.split("-");
+      return new Date(`${year}-${month}-${day}`);
+    };
+
+    const from = parseDateString(fromDate);
+    const to = parseDateString(toDate);
+    to.setHours(23, 59, 59, 999);
+
+    if (isNaN(from) || isNaN(to)) {
+      return res.status(400).json({ message: "Invalid date format" });
+    }
+
+
+    const query = {
+      bookingDate: { $gte: from, $lte: to }
+    };
+
+    if (user.role === "supervisor") {
+      query.createdByUser = user._id;
+    }
+
+    const bookings = await Booking.find(query).sort({ bookingDate: -1 });
+
+    // Transform bookings to include detailed payment breakdown
+    const transformedBookings = bookings.map(booking => {
+      const paidItems = booking.items.filter(item => item.toPay === "paid");
+      const toPayItems = booking.items.filter(item => item.toPay === "pay");
+
+      const paidAmount = paidItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+      const toPayAmount = toPayItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+
+      return {
+        ...booking.toObject(),
+        // New payment fields
+        paid: paidAmount,
+        toPay: toPayAmount,
+        // Existing fields
+        paidAmount, // Keeping for backward compatibility
+        toPayAmount, // Keeping for backward compatibility
+        itemsCount: booking.items?.length || 0,
+        // Additional calculated fields
+        paymentStatus: paidAmount > 0 ? (toPayAmount > 0 ? "Partial" : "Paid") : "Unpaid"
+      };
+    });
+
+    // Calculate comprehensive summary
+    const summary = {
+      totalPaid: transformedBookings.reduce((sum, b) => sum + b.paid, 0),
+      totalToPay: transformedBookings.reduce((sum, b) => sum + b.toPay, 0),
+      totalBookings: transformedBookings.length,
+      paidBookings: transformedBookings.filter(b => b.paid > 0 && b.toPay === 0).length,
+      unpaidBookings: transformedBookings.filter(b => b.paid === 0).length,
+      partialBookings: transformedBookings.filter(b => b.paid > 0 && b.toPay > 0).length
+    };
+
+    res.status(200).json({
+      message: `Bookings from ${fromDate} to ${toDate}`,
+      summary: {
+        ...summary,
+        grandTotal: summary.totalPaid + summary.totalToPay,
+        paymentBreakdown: {
+          fullyPaid: summary.paidBookings,
+          partiallyPaid: summary.partialBookings,
+          unpaid: summary.unpaidBookings
+        }
+      },
+      bookings: transformedBookings
+    });
+  } catch (error) {
+    console.error("Error fetching bookings by date:", error);
+    res.status(500).json({
+      message: "Server Error",
+      error: error.message
+    });
+  }
+};
+
+
+
+function getEmptyTotals() {
+  return {
+    particulars: "Total",
+    gst: "",
+    startStation: "",
+    endStation: "",
+    voucherCount: 0,
+    taxableValue: 0,
+    integratedTax: 0,
+    centralTax: 0,
+    stateTax: 0,
+    cessAmount: 0,
+    invoiceAmount: 0
+  };
+}
+
+export const getCADetailsSummary = async (req, res) => {
+  try {
+    const { pickup, drop, fromDate, toDate } = req.body;
+
+    if (!pickup && !drop && !fromDate && !toDate) {
+      return res.status(400).json({
+        message: "At least one filter (pickup, drop, or date range) is required"
+      });
+    }
+
+    const baseQuery = { isDelivered: true };
+
+    // Resolve pickup (startStation)
+    if (pickup) {
+      const startStationDoc = await Station.findOne({
+        stationName: new RegExp(`^${pickup}$`, 'i')
+      });
+      if (!startStationDoc) {
+        return res.status(404).json({ message: `Pickup station '${pickup}' not found` });
+      }
+      baseQuery.startStation = startStationDoc._id;
+    }
+
+    // Resolve drop (endStation)
+    if (drop) {
+      const endStationDoc = await Station.findOne({
+        stationName: new RegExp(`^${drop}$`, 'i')
+      });
+      if (!endStationDoc) {
+        return res.status(404).json({ message: `Drop station '${drop}' not found` });
+      }
+      baseQuery.endStation = endStationDoc._id;
+    }
+
+    // Date range
+    const dateFilter = {};
+    if (fromDate) {
+      const from = new Date(fromDate);
+      from.setHours(0, 0, 0, 0);
+      dateFilter.$gte = from;
+    }
+    if (toDate) {
+      const toD = new Date(toDate);
+      toD.setHours(23, 59, 59, 999);
+      dateFilter.$lte = toD;
+    }
+    if (Object.keys(dateFilter).length > 0) {
+      baseQuery.bookingDate = dateFilter;
+    }
+
+    console.log("👉 Final baseQuery:", JSON.stringify(baseQuery, null, 2));
+
+    // First check if any matching delivered bookings exist
+    const anyDeliveries = await Booking.find(baseQuery).limit(1);
+    if (anyDeliveries.length === 0) {
+      return res.status(200).json(
+        new ApiResponse(200, {
+          summary: [],
+          totals: getEmptyTotals(),
+          filters: { pickup, drop, fromDate, toDate },
+          diagnostics: {
+            message: "No delivered bookings found matching pickup/drop/date criteria",
+            potentialIssues: [
+              "Bookings may not be marked as delivered",
+              "Station names may not match exactly",
+              "No bookings exist for the date range"
+            ]
+          }
+        }, "No matching deliveries found")
+      );
+    }
+
+    // Add tax condition
+    const taxQuery = {
+      ...baseQuery,
+      $or: [
+        { cgst: { $gt: 0 } },
+        { sgst: { $gt: 0 } },
+        { igst: { $gt: 0 } }
+      ]
+    };
+
+    const taxEligible = await Booking.find(taxQuery).limit(1);
+    if (taxEligible.length === 0) {
+      return res.status(200).json(
+        new ApiResponse(200, {
+          summary: [],
+          totals: getEmptyTotals(),
+          filters: { pickup, drop, fromDate, toDate },
+          diagnostics: {
+            message: "Deliveries found but no tax data present",
+            suggestion: "Check if CGST/SGST/IGST values are being recorded properly"
+          }
+        }, "No tax-eligible deliveries found")
+      );
+    }
+
+    // Aggregation placeholder (update as per your needs)
+    const summary = await Booking.aggregate([
+      { $match: taxQuery },
+      {
+        $group: {
+          _id: null,
+          voucherCount: { $sum: 1 },
+          taxableValue: { $sum: "$billTotal" },
+          totalCgstPercent: { $sum: "$cgst" },
+          totalSgstPercent: { $sum: "$sgst" },
+          totalIgstPercent: { $sum: "$igst" },
+          senderNames: { $addToSet: "$senderName" },
+          customerNames: {
+            $addToSet: {
+              $concat: [
+                "$firstName",
+                { $cond: [{ $gt: [{ $strLenCP: "$middleName" }, 0] }, { $concat: [" ", "$middleName"] }, ""] },
+                " ",
+                "$lastName"
+              ]
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          centralTax: {
+            $round: [{ $divide: [{ $multiply: ["$taxableValue", "$totalCgstPercent"] }, 100] }, 2]
+          },
+          stateTax: {
+            $round: [{ $divide: [{ $multiply: ["$taxableValue", "$totalSgstPercent"] }, 100] }, 2]
+          },
+          integratedTax: {
+            $round: [{ $divide: [{ $multiply: ["$taxableValue", "$totalIgstPercent"] }, 100] }, 2]
+          }
+        }
+      },
+      {
+        $addFields: {
+          invoiceAmount: {
+            $add: ["$taxableValue", "$centralTax", "$stateTax", "$integratedTax"]
+          },
+          cessAmount: { $literal: 0 }
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          voucherCount: 1,
+          taxableValue: 1,
+          centralTax: 1,
+          stateTax: 1,
+          integratedTax: 1,
+          invoiceAmount: 1,
+          senderNames: 1,
+          customerNames: 1,
+          particulars: { $literal: "Total" },
+          gst: { $literal: "" },
+          startStation: { $literal: pickup || "" },
+          endStation: { $literal: drop || "" },
+          cessAmount: 1
+        }
+      }
+    ]);
+
+
+
+    const result = {
+      summary,
+      totals: summary[0] || getEmptyTotals(),
+      filters: { pickup, drop, fromDate, toDate }
+    };
+
+    res.status(200).json(new ApiResponse(200, result, "CA Details summary fetched successfully"));
+  } catch (error) {
+    console.error("❌ Error in getCADetailsSummary:", error);
+    res.status(500).json(
+      new ApiResponse(500, null, "Server error while generating summary")
+    );
+  }
+};
+
+
+
+
+
+export const generateInvoiceByCustomer = async (req, res) => {
+  try {
+    const { customerName, fromDate, toDate } = req.body;
+
+    if (!customerName || !fromDate || !toDate) {
+      return res.status(400).json({
+        message: "customerName, fromDate, and toDate are required",
+        data: { customerName, fromDate, toDate }
+      });
+    }
+
+    // Step 1: Find Customer
+    const customer = await Customer.findOne({
+      $or: [
+        {
+          $expr: {
+            $regexMatch: {
+              input: { $concat: ["$firstName", "$middleName", "$lastName"] },
+              regex: customerName,
+              options: "i"
+            }
+          }
+        }
+      ]
+    });
+
+
+    if (!customer) {
+      return res.status(404).json({
+        message: "Customer not found",
+        customerSearchTerm: customerName,
+      });
+    }
+
+    // Step 2: Find Bookings
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+    to.setHours(23, 59, 59, 999); // end of day
+
+    const bookings = await Booking.find({
+      customerId: customer._id,
+      bookingDate: { $gte: from, $lte: to },
+    }).sort({ bookingDate: 1 });
+
+    if (!bookings.length) {
+      // Fetch all bookings for debugging in API response
+      const allBookings = await Booking.find({ customerId: customer._id }).sort({ bookingDate: 1 });
+
+      return res.status(404).json({
+        message: "No bookings found in the given date range",
+        customer: {
+          id: customer._id,
+          name: `${customer.firstName} ${customer.lastName}`,
+        },
+        requestedDateRange: {
+          from: from.toISOString(),
+          to: to.toISOString(),
+        },
+        availableBookingsDates: allBookings.map(b => ({
+          id: b._id,
+          date: b.bookingDate,
+          billTotal: b.billTotal,
+          receiverName: b.receiverName
+        })),
+      });
+    }
+
+    // Step 3: Generate PDF
+    const pdfBuffer = await generateInvoicePDF(customer, bookings);
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${customer.firstName}_Invoice.pdf"`,
+    });
+
+    res.send(pdfBuffer);
+  } catch (err) {
+    res.status(500).json({
+      message: err.message || "Server Error",
+      error: true
+    });
+  }
+};
 

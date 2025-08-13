@@ -67,7 +67,7 @@ const CustomerCard = ({ onSelect }) => {
   useEffect(() => {
     dispatch(fetchActiveCustomer());
     dispatch(fetchActiveCustomerCount());
-    dispatch(fetchBlackListedCustomerCount()); // default load
+    dispatch(fetchBlackListedCustomerCount());
   }, [dispatch]);
 
   const handleSearch = (event) => setSearchTerm(event.target.value.toLowerCase());
@@ -123,11 +123,11 @@ const CustomerCard = ({ onSelect }) => {
 
   const handleStatusActivate = (customerId) => {
     dispatch(updateStatusActivate(customerId));
-    window.location.reload();
+    dispatch(fetchActiveCustomer());
   }
   const handleStatusBacklist = (customerId) => {
     dispatch(updateStatusBacklist(customerId));
-    window.location.reload();
+    dispatch(fetchActiveCustomer());
   }
   return (
     <Box sx={{ p: 3 }}>

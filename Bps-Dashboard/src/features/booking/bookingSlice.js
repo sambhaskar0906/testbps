@@ -207,7 +207,6 @@ export const fetchOverallBookingSummary = createAsyncThunk(
           fromDate, endDate
         });
 
-
       return response.data.data;
     } catch (error) {
       return rejectWithValue(
@@ -216,10 +215,39 @@ export const fetchOverallBookingSummary = createAsyncThunk(
     }
   }
 );
+
+export const getBookingSummaryByDate = createAsyncThunk(
+  'booking/getBookingSummary',
+  async ({ fromDate, toDate }, thunkApi) => {
+    try {
+      const res = await axios.post(`${BASE_URL}/booking-summary`, {
+        fromDate, toDate
+      });
+      return res.data.bookings;
+    } catch (err) {
+      return thunkApi.rejectWithValue(err.response?.data?.message || 'Failed to fetch data');
+    }
+  }
+);
+export const caReport = createAsyncThunk(
+  'booking/caReport', async ({ pickup, drop, fromDate, toDate }, thunkApi) => {
+    try {
+      const response = await axios.post(`${BASE_URL}/ca-report`, { pickup, drop, fromDate, toDate });
+      return response.data.data;
+    }
+    catch (err) {
+      return thunkApi.rejectWithValue(err.response?.data?.message || 'Failed to fetch Ca Report');
+    }
+  }
+)
+
+
 const initialState = {
   list: [],
   list2: [],
   list3: [],
+  list4: [],
+  list5: [],
   requestCount: 0,
   activeDeliveriesCount: 0,
   cancelledDeliveriesCount: 0,
@@ -462,7 +490,24 @@ const bookingSlice = createSlice({
       .addCase(fetchOverallBookingSummary.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
+      })
+      .addCase(getBookingSummaryByDate.fulfilled, (state, action) => {
+        state.loading = false;
+        state.list4 = action.payload;
+      })
+      .addCase(caReport.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(caReport.fulfilled, (state, action) => {
+        state.loading = false;
+        state.list5 = action.payload;
+      })
+      .addCase(caReport.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      ;
   }
 })
 export const { setFormField, resetForm, addBooking, setBooking, clearViewedBooking } = bookingSlice.actions;

@@ -44,7 +44,7 @@ const customerSchema = new mongoose.Schema({
     idProof: {
         type: String,
         required: true,
-        unique: true
+        // unique: true
     },
     idProofPhoto: {
         type: String,
@@ -71,6 +71,9 @@ const customerSchema = new mongoose.Schema({
     isBlacklisted: {
         type: Boolean,
         default: false
+    },
+    stateCode: {
+        type: String,
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,

@@ -51,21 +51,29 @@ const pieData = [
   { name: 'Cancelled', value: 10, increase: 1 },
 ];
 
-const COLORS = ['#0088FE', '#FFBB28', '#FF8042'];
+const COLORS = ['#4CAF50', '#FFC107', '#F44336'];
 
 const Graph = () => {
   const theme = useTheme();
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3 }, backgroundColor: '#f5f8f9', minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, backgroundColor: '#f8f9fa' }}>
       <Typography variant="h5" fontWeight={700} mb={4}>
-        Dashboard Overview
+        📊 Dashboard Analytics
       </Typography>
 
-      <Grid container spacing={3}>
+      <Grid container rowSpacing={10} columnSpacing={3}>
         {/* Bar Chart */}
-        <Grid item size={{ xs: 12, md: 6 }}>
-          <Card sx={{ p: 3, borderRadius: 3, height: '100%', boxShadow: 4 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card
+            sx={{
+              p: 3,
+              borderRadius: 4,
+              height: '100%',
+              boxShadow: 6,
+              background: 'linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)',
+            }}
+          >
             <Stack direction="row" alignItems="center" spacing={1} mb={2}>
               <BarIcon color="primary" />
               <Typography variant="h6" fontWeight={600}>
@@ -73,18 +81,18 @@ const Graph = () => {
               </Typography>
             </Stack>
 
-            <Grid container spacing={2} mb={3}>
-              <Grid item xs={6} sm={4}>
+            <Grid container spacing={2} mb={2}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <Typography variant="body2" color="text.secondary">Bookings</Typography>
-                <Typography variant="h6" fontWeight={600}>156</Typography>
+                <Typography variant="h6" fontWeight={700} color="primary.dark">156</Typography>
               </Grid>
-              <Grid item xs={6} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <Typography variant="body2" color="text.secondary">Cancelled</Typography>
-                <Typography variant="h6" fontWeight={600}>24</Typography>
+                <Typography variant="h6" fontWeight={700} color="error.main">24</Typography>
               </Grid>
-              <Grid item xs={6} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <Typography variant="body2" color="text.secondary">Revenue</Typography>
-                <Typography variant="h6" fontWeight={600}>$12,456</Typography>
+                <Typography variant="h6" fontWeight={700} color="success.dark">$12,456</Typography>
               </Grid>
             </Grid>
 
@@ -97,11 +105,11 @@ const Graph = () => {
                   <XAxis dataKey="name" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="value" fill="url(#barGradient)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="value" fill="url(#barGradient)" radius={[8, 8, 0, 0]} />
                   <defs>
                     <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={theme.palette.primary.main} stopOpacity={0.8} />
-                      <stop offset="100%" stopColor={theme.palette.primary.light} stopOpacity={0.5} />
+                      <stop offset="0%" stopColor={theme.palette.primary.main} stopOpacity={0.9} />
+                      <stop offset="100%" stopColor={theme.palette.primary.light} stopOpacity={0.6} />
                     </linearGradient>
                   </defs>
                 </BarChart>
@@ -111,8 +119,16 @@ const Graph = () => {
         </Grid>
 
         {/* Pie Chart */}
-        <Grid item size={{ xs: 12, md: 6 }}>
-          <Card sx={{ p: 3, borderRadius: 3, height: '100%', boxShadow: 4 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card
+            sx={{
+              p: 3,
+              borderRadius: 4,
+              height: '100%',
+              boxShadow: 6,
+              background: 'linear-gradient(135deg, #ffffff 0%, #f7f8fc 100%)',
+            }}
+          >
             <Stack direction="row" alignItems="center" spacing={1} mb={2}>
               <Assessment color="primary" />
               <Typography variant="h6" fontWeight={600}>
@@ -179,8 +195,15 @@ const Graph = () => {
         </Grid>
 
         {/* Line Chart */}
-        <Grid item size={{ xs: 12, md: 12 }}>
-          <Card sx={{ p: 3, borderRadius: 3, boxShadow: 4, mt: 4 }}>
+        <Grid size={{ xs: 12 }}>
+          <Card
+            sx={{
+              p: 3,
+              borderRadius: 4,
+              boxShadow: 6,
+              background: 'linear-gradient(to top right, #e0eafc, #cfdef3)',
+            }}
+          >
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
               <Stack direction="row" spacing={1} alignItems="center">
                 <Timeline color="primary" />
@@ -214,7 +237,7 @@ const Graph = () => {
                   <defs>
                     <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor={theme.palette.primary.main} stopOpacity={0.9} />
-                      <stop offset="100%" stopColor={theme.palette.primary.light} stopOpacity={0.5} />
+                      <stop offset="100%" stopColor={theme.palette.primary.light} stopOpacity={0.6} />
                     </linearGradient>
                   </defs>
                 </LineChart>
@@ -223,7 +246,7 @@ const Graph = () => {
           </Card>
         </Grid>
       </Grid>
-    </Box >
+    </Box>
   );
 };
 

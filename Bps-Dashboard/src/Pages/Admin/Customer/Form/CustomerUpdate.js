@@ -51,7 +51,7 @@ const CustomerUpdate = () => {
     firstName: '', middleName: '', lastName: '',
     contactNumber: '', email: '',
     address: '', state: '', city: '', district: '', pincode: '', gstNumber: '',
-    idProof: '', idPhoto: '', customerPhoto: ''
+    idProof: '', idPhoto: '', customerPhoto: '', stateCode: ''
   });
 
   useEffect(() => {
@@ -88,7 +88,8 @@ const CustomerUpdate = () => {
         gstNumber: customerData.gstNumber || '',
         idProof: customerData.idProof || '',
         idPhoto: customerData.idPhoto || '',
-        customerPhoto: customerData.customerPhoto || ''
+        customerPhoto: customerData.customerPhoto || '',
+        stateCode: customerData.stateCode || ''
       });
     }
   }, [customerData]);
@@ -293,6 +294,7 @@ const CustomerUpdate = () => {
               <EditableTextField name="district" label="District" value={form.district} onChange={handleChange} />
               <EditableTextField name="pincode" label="Pincode" value={form.pincode} onChange={handleChange} />
               <EditableTextField name="gstNumber" label="GST" value={form.gstNumber} onChange={handleChange} />
+              <EditableTextField name="stateCode" label="State Code" value={form.stateCode} onChange={handleChange} />
             </Grid>
           </CardContent>
         </Card>

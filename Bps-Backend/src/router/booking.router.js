@@ -19,7 +19,10 @@ import {
   rejectThirdPartyBookingRequest,
   sendBookingEmailById,
   customerWiseData,
-  overallBookingSummary
+  overallBookingSummary,
+  getBookingSummaryByDate,
+  getCADetailsSummary,
+  generateInvoiceByCustomer,
 } from '../controller/booking.controller.js';
 
 import { parseFormData } from "../middleware/multerParser.middleware.js";
@@ -47,5 +50,8 @@ router.get('/:id', viewBooking);           // View by bookingId (not _id!)
 router.put('/:id', updateBooking);         // Update by bookingId
 router.delete('/:id', deleteBooking);      // Delete by bookingId
 router.post('/overallBookingSummary', overallBookingSummary);
+router.post('/booking-summary', verifyJwt, getBookingSummaryByDate);
+router.post('/ca-report', getCADetailsSummary);
+router.post('/invoice', generateInvoiceByCustomer);
 
 export default router;

@@ -27,21 +27,21 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import format from 'date-fns/format';
 
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
-import { pendingList, approveList, rejectThridParty } from '../features/booking/bookingSlice';
+import { pendingList, approveList, rejectThridParty, getBookingSummaryByDate } from '../features/booking/bookingSlice';
+import { getQuotationBookingSummaryByDate } from '../features/quotation/quotationSlice';
 import { changePassword } from '../features/user/userSlice';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import format from 'date-fns/format';
+
 
 const AppBarHeader = () => {
     const dispatch = useDispatch();
-    const { list2: pending } = useSelector(state => state.bookings);
+    const { list2: pending } = useSelector(state => state.quotations);
     const navigate = useNavigate();
     const [anchorEl, setAnchorEl] = useState(null);
     const [notifAnchorEl, setNotifAnchorEl] = useState(null);
@@ -55,9 +55,10 @@ const AppBarHeader = () => {
     const [oldPassword, setOldPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-
-    const [openDateDialog, setOpenDateDialog] = useState(false);
-    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [openBookingDialog, setOpenBookingDialog] = useState(false);
+    const [openQuotationDialog, setOpenQuotationDialog] = useState(false);
+    const [fromDate, setFromDate] = useState(null);
+    const [toDate, setToDate] = useState(null);
 
     const handleChangePassword = async () => {
         if (!oldPassword || !newPassword || !confirmPassword) {
@@ -163,11 +164,118 @@ const AppBarHeader = () => {
                         </Tooltip>
                     )}
 
-                    <Tooltip title="Per Day Booking">
-                        <IconButton color="inherit" onClick={() => setOpenDateDialog(true)}>
-                            <CalendarMonthIcon />
-                        </IconButton>
-                    </Tooltip>
+                    {/* New Summary Buttons */}
+                    <Button
+                        variant="outlined"
+                        color="inherit"
+                        size="small"
+                        onClick={() => setOpenBookingDialog(true)}
+                        sx={{ textTransform: 'none' }}
+                    >
+                        Booking Summary
+                    </Button>
+
+                    <Button
+                        variant="outlined"
+                        color="inherit"
+                        size="small"
+                        onClick={() => setOpenQuotationDialog(true)}
+                        sx={{ textTransform: 'none' }}
+                    >
+                        Quotation Summary
+                    </Button>
+
+                    {/* Booking Summary Dialog */}
+                    <Dialog open={openBookingDialog} onClose={() => setOpenBookingDialog(false)} maxWidth="xs" fullWidth>
+                        <DialogTitle>Booking Summary</DialogTitle>
+                        <DialogContent>
+                            <LocalizationProvider dateAdapter={AdapterDateFns}>
+                                <Box display="flex" flexDirection="column" gap={2} mt={1}>
+                                    <DatePicker
+                                        label="From Date"
+                                        value={fromDate}
+                                        onChange={(newValue) => setFromDate(newValue)}
+                                        slotProps={{ textField: { fullWidth: true, variant: 'outlined' } }}
+                                    />
+                                    <DatePicker
+                                        label="To Date"
+                                        value={toDate}
+                                        onChange={(newValue) => setToDate(newValue)}
+                                        slotProps={{ textField: { fullWidth: true, variant: 'outlined' } }}
+                                    />
+                                </Box>
+                            </LocalizationProvider>
+                        </DialogContent>
+                        <DialogActions sx={{ px: 3, pb: 2 }}>
+                            <Button onClick={() => setOpenBookingDialog(false)} variant="outlined">
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={() => {
+                                    if (!fromDate || !toDate) return alert('Please select both dates');
+                                    const from = format(fromDate, 'dd-MM-yyyy');
+                                    const to = format(toDate, 'dd-MM-yyyy');
+                                    navigate(`/booking-summary/${from}/${to}`);
+                                    dispatch(getBookingSummaryByDate({ fromDate: from, toDate: to }));
+                                    setOpenBookingDialog(false);
+                                }}
+                                variant="contained"
+                            >
+                                View
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+
+                    {/* Quotation Summary Dialog */}
+                    <Dialog open={openQuotationDialog} onClose={() => setOpenQuotationDialog(false)} maxWidth="xs" fullWidth>
+                        <DialogTitle>Quotation Summary</DialogTitle>
+                        <DialogContent>
+                            <LocalizationProvider dateAdapter={AdapterDateFns}>
+                                <Box display="flex" flexDirection="column" gap={2} mt={1}>
+                                    <DatePicker
+                                        label="From Date"
+                                        value={fromDate}
+                                        onChange={(newValue) => setFromDate(newValue)}
+                                        slotProps={{ textField: { fullWidth: true, variant: 'outlined' } }}
+                                    />
+                                    <DatePicker
+                                        label="To Date"
+                                        value={toDate}
+                                        onChange={(newValue) => setToDate(newValue)}
+                                        slotProps={{ textField: { fullWidth: true, variant: 'outlined' } }}
+                                    />
+                                </Box>
+                            </LocalizationProvider>
+                        </DialogContent>
+                        <DialogActions sx={{ px: 3, pb: 2 }}>
+                            <Button onClick={() => setOpenQuotationDialog(false)} variant="outlined">
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={async () => {
+                                    if (!fromDate || !toDate) {
+                                        return alert('Please select both dates');
+                                    }
+
+                                    const from = format(fromDate, 'dd-MM-yyyy'); // Use correct format for API
+                                    const to = format(toDate, 'dd-MM-yyyy');
+
+                                    try {
+                                        const response = await dispatch(getQuotationBookingSummaryByDate({ fromDate: from, toDate: to })).unwrap();
+                                        console.log('Summary:', response); // or set to state if you want to show it in UI
+                                        setOpenQuotationDialog(false);
+                                        navigate(`/booking-summary/${format(fromDate, 'dd-MM-yyyy')}/${format(toDate, 'dd-MM-yyyy')}`);
+                                    } catch (error) {
+                                        alert(`Error: ${error}`);
+                                    }
+                                }}
+                                variant="contained"
+                            >
+                                View
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+
 
                     <Tooltip title="Open Profile Menu">
                         <IconButton onClick={handleOpenMenu} sx={{ p: 0 }}>
@@ -268,49 +376,6 @@ const AppBarHeader = () => {
                         </Button>
                         <Button onClick={handleChangePassword} variant="contained" color="primary">
                             Update Password
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-
-                {/* Per Day Booking Dialog */}
-                <Dialog open={openDateDialog} onClose={() => setOpenDateDialog(false)} maxWidth="xs" fullWidth>
-                    <DialogTitle>Select Booking Date</DialogTitle>
-                    <DialogContent>
-                        <LocalizationProvider dateAdapter={AdapterDateFns}>
-                            <DatePicker
-                                label="Booking Date"
-                                value={selectedDate}
-                                onChange={(newValue) => setSelectedDate(newValue)}
-                                format="dd-MM-yyyy"
-                                slotProps={{
-                                    textField: {
-                                        fullWidth: true,
-                                        variant: 'outlined',
-                                        margin: 'normal',
-                                        InputLabelProps: { shrink: true },
-                                    },
-                                    paperContent: {
-                                        sx: {
-                                            width: '80%',
-                                            maxWidth: '80%',
-                                        },
-                                    },
-                                }}
-                            />
-                        </LocalizationProvider>
-                    </DialogContent>
-
-                    <DialogActions>
-                        <Button onClick={() => setOpenDateDialog(false)}>Cancel</Button>
-                        <Button
-                            variant="contained"
-                            onClick={() => {
-                                const formattedDate = format(selectedDate, 'dd-MM-yyyy');
-                                navigate(`/booking/day/${formattedDate}`);
-                                setOpenDateDialog(false);
-                            }}
-                        >
-                            View Bookings
                         </Button>
                     </DialogActions>
                 </Dialog>
