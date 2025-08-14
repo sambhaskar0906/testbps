@@ -13,6 +13,7 @@ import ContactPageIcon from '@mui/icons-material/ContactPage';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 
 export const sidebarItems = [
     { label: 'Dashboard', route: '/', icon: <DashboardIcon /> },
@@ -21,7 +22,8 @@ export const sidebarItems = [
     { label: 'Manage Vehicle', route: '/vehicle', icon: <DirectionsCarIcon /> },
     { label: 'Manage Driver', route: '/driver', icon: <PersonIcon /> },
     { label: 'Manage Customer', route: '/customer', icon: <SupportAgentIcon /> },
-    { label: 'Tracker', route: '/tracker', icon: <MapIcon /> },
+    { label: 'Manage Qcustomer', route: '/qcustomer', icon: <PeopleAltIcon /> },
+    { label: 'Invoice', route: '/invoice', icon: <MapIcon /> },
     { label: 'Quotation', route: '/quotation', icon: <RequestQuoteIcon /> },
     { label: 'Ledger', route: '/ladger', icon: <AccountBalanceIcon /> },
     { label: 'Ledger History', route: '/ladgerhsitory', icon: <AccountBalanceIcon /> },
@@ -31,5 +33,6 @@ export const sidebarItems = [
     { label: 'Contact', route: '/contact', icon: <ContactPageIcon /> },
     { label: 'Booking Report', route: '/booking-report', icon: <BookOnlineIcon /> },
     { label: 'Pending List', route: '/pandding-list', icon: <AccountBalanceIcon /> },
-    { label: 'Cashbook', route: '/cashbook', icon: <MenuBookIcon /> },
+    // { label: 'Cashbook', route: '/cashbook', icon: <MenuBookIcon /> },
+    // { label: 'Manage Staff', route: '/staff', icon: <PeopleAltIcon /> },
 ];

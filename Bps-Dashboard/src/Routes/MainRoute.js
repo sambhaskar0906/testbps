@@ -43,6 +43,12 @@ import { getTokenExpiration } from '../utils/auth';
 import ViewBookingByDate from '../Components/ViewBookingByDate';
 import PanddingList from '../Pages/Admin/PanddingList/PanddingList';
 import Cashbook from '../Pages/Admin/Cashbook/Cashbook';
+import StaffCrad from '../Pages/Admin/Staff/StaffCrad';
+import StaffForm from '../Pages/Admin/Staff/Form/StaffForm';
+import QcustomerCard from '../Pages/Admin/Qcustomer/QcustomerCard';
+import QcustomerForm from '../Pages/Admin/Qcustomer/Form/QcustomerForm';
+import QcustomerView from '../Pages/Admin/Qcustomer/Form/QcustomerView';
+import QcustomerUpdate from '../Pages/Admin/Qcustomer/Form/QcustomerUpdate';
 
 
 const MainRoute = () => {
@@ -100,6 +106,7 @@ const MainRoute = () => {
                 <Route path="/contact" element={<ContactCard />} />
                 <Route path="/customer" element={<CustomerCard />} />
                 <Route path="/delivery" element={<DeliveryCard />} />
+                <Route path="/qcustomer" element={<QcustomerCard />} />
 
                 {/* Manage Vehicle */}
                 <Route path="/vehicle" element={<VehicleCard />} />
@@ -107,7 +114,7 @@ const MainRoute = () => {
                 <Route path="/vehicleview/:vehicleId" element={<ViewVehicle />} />
                 <Route path="/editvehicle/:vehicleId" element={<EditVehicle />} />
 
-                <Route path="/tracker" element={<TrackerCard />} />
+                <Route path="/invoice" element={<TrackerCard />} />
 
                 {/* Ledger */}
                 <Route path="/ladger" element={<LedgerCard />} />
@@ -124,6 +131,11 @@ const MainRoute = () => {
                 <Route path="/customerform" element={<CustomerForm />} />
                 <Route path="/customerview/:customerId" element={<CustomerView />} />
                 <Route path="/customerupdate/:customerId" element={<CustomerUpdate />} />
+
+                {/* QCustomer */}
+                <Route path="/qcustomerform" element={<QcustomerForm />} />
+                <Route path="/qcustomerview/:customerId" element={<QcustomerView />} />
+                <Route path="/qcustomerupdate/:customerId" element={<QcustomerUpdate />} />
 
                 {/* Driver */}
                 <Route path="/driver" element={<DriverCard />} />
@@ -151,8 +163,6 @@ const MainRoute = () => {
                 {/* Report */}
                 <Route path="/booking-report" element={<BookingReport />} />
 
-                {/* Cashbook */}
-                <Route path='/cashbook' element={<Cashbook />} />
 
                 {/* Users (Admin Only) */}
                 {role !== 'supervisor' && (
@@ -161,6 +171,11 @@ const MainRoute = () => {
                         <Route path="/userform" element={<UserForm />} />
                         <Route path="/viewuser/:adminId" element={<ViewUser />} />
                         <Route path="/edituser/:adminId" element={<EditUser />} />
+                        {/* Cashbook */}
+                        <Route path='/cashbook' element={<Cashbook />} />
+                        {/* Staff */}
+                        <Route path='/staff' element={<StaffCrad />} />
+                        <Route path='/staffform' element={<StaffForm />} />
                     </>
                 )}
             </Routes>

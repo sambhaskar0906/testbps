@@ -103,9 +103,10 @@ const SlipModal = ({ open, handleClose, bookingData }) => {
           ${[
                 ['Freight', formatCurrency(bookingData?.freight)],
                 ['Insurance/VPP', formatCurrency(bookingData?.ins_vpp)],
+                ['Topay', formatCurrency(bookingData?.items?.toPay)],
                 ['CGST (9%)', formatCurrency(bookingData?.cgst)],
                 ['SGST (9%)', formatCurrency(bookingData?.sgst)],
-                ['IGST', formatCurrency(bookingData?.igst)],
+                ['IGST (18%)', formatCurrency(bookingData?.igst)],
                 ['Total Amount', formatCurrency(bookingData?.grandTotal)],
             ].map(([label, value]) => `
             <div class="row">
@@ -189,9 +190,10 @@ const SlipModal = ({ open, handleClose, bookingData }) => {
                             {[
                                 ['Freight', formatCurrency(freight)],
                                 ['Insurance/VPP', formatCurrency(ins_vpp)],
+                                ['Topay', (bookingData?.items?.[0]?.toPay)],
                                 ['CGST (9%)', formatCurrency(cgst)],
                                 ['SGST (9%)', formatCurrency(sgst)],
-                                ['IGST', formatCurrency(igst)],
+                                ['IGST (18%)', formatCurrency(igst)],
                             ].map(([label, value], i) => (
                                 <React.Fragment key={i}>
                                     <Grid size={{ xs: 6 }}><Typography sx={labelStyle}>{label}:</Typography></Grid>

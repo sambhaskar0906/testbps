@@ -5,12 +5,15 @@ import nodemailer from 'nodemailer';
 import Quotation from "../model/customerQuotation.model.js";
 import { Customer } from "../model/customer.model.js";
 import manageStation from "../model/manageStation.model.js";
+import { QCustomer } from "../model/Qcustomer.model.js";
 import { parse } from 'date-fns';
 const formatQuotations = (quotations) => {
   return quotations.map((q, index) => ({
     "S.No.": index + 1,
     "Booking ID": q.bookingId,
-    "orderBy": `${q.createdByRole} ${q.startStation?.stationName || ''}`,
+    "orderBy": q.createdByRole === "admin"
+      ? "Admin"
+      : `Supervisor ${q.startStation?.stationName || ''}`,
     "Date": q.quotationDate.toLocaleDateString('en-CA'),
     "Name": q.customerId
       ? `${q.customerId.firstName} ${q.customerId.lastName}`
@@ -61,7 +64,7 @@ const getBookingFilterByType = (type, user) => {
 // Create Quotation Controller
 export const createQuotation = asyncHandler(async (req, res, next) => {
   const user = req.user;
-  const {
+  let {
     firstName,
     lastName,
     middleName, // in case user sends it
@@ -87,6 +90,18 @@ export const createQuotation = asyncHandler(async (req, res, next) => {
     grandTotal
   } = req.body;
 
+  // Auto-extract name if missing
+  if ((!firstName || !lastName) && fromCustomerName) {
+    const parts = fromCustomerName.trim().split(" ");
+    firstName = parts[0] || "";
+    lastName = parts.slice(1).join(" ") || "";
+  } else if ((!firstName || !lastName) && toCustomerName) {
+    const parts = toCustomerName.trim().split(" ");
+    firstName = parts[0] || "";
+    lastName = parts.slice(1).join(" ") || "";
+  }
+
+  // Now validate
   if (!firstName || !lastName) {
     return next(new ApiError(400, "Customer first and last name are required"));
   }
@@ -100,7 +115,7 @@ export const createQuotation = asyncHandler(async (req, res, next) => {
   }
 
   // 1. Find Customer
-  const customer = await Customer.findOne({ firstName, lastName });
+  const customer = await QCustomer.findOne({ firstName, lastName });
   if (!customer) return next(new ApiError(404, "Customer not found"));
 
   // 2. Find Start Station
@@ -155,16 +170,17 @@ export const createQuotation = asyncHandler(async (req, res, next) => {
     productDetails,
     grandTotal,
   });
+
   const formattedQuotation = {
     ...quotation.toObject(),
     quotationDate: new Date(quotation.quotationDate).toLocaleDateString("en-IN"),
     proposedDeliveryDate: new Date(quotation.proposedDeliveryDate).toLocaleDateString("en-IN"),
   };
+
   await quotation.save();
   await sendBookingEmail(customer.emailId, quotation);
-  res
-    .status(201)
-    .json(new ApiResponse(201, formattedQuotation, "Quotation created successfully"));
+
+  res.status(201).json(new ApiResponse(201, formattedQuotation, "Quotation created successfully"));
 });
 
 

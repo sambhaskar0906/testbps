@@ -50,7 +50,7 @@ const CustomerUpdate = () => {
   const [form, setForm] = useState({
     firstName: '', middleName: '', lastName: '',
     contactNumber: '', email: '',
-    address: '', state: '', city: '', district: '', pincode: '', gstNumber: '',
+    address: '', state: '', city: '', district: '', pincode: '',
     idProof: '', idPhoto: '', customerPhoto: '', stateCode: ''
   });
 
@@ -85,7 +85,6 @@ const CustomerUpdate = () => {
         city: customerData.city || '',
         district: customerData.district || '',
         pincode: customerData.pincode || '',
-        gstNumber: customerData.gstNumber || '',
         idProof: customerData.idProof || '',
         idPhoto: customerData.idPhoto || '',
         customerPhoto: customerData.customerPhoto || '',
@@ -293,7 +292,6 @@ const CustomerUpdate = () => {
               </Grid>
               <EditableTextField name="district" label="District" value={form.district} onChange={handleChange} />
               <EditableTextField name="pincode" label="Pincode" value={form.pincode} onChange={handleChange} />
-              <EditableTextField name="gstNumber" label="GST" value={form.gstNumber} onChange={handleChange} />
               <EditableTextField name="stateCode" label="State Code" value={form.stateCode} onChange={handleChange} />
             </Grid>
           </CardContent>

@@ -35,9 +35,9 @@ function Home() {
       <Googlemap/> */}
 
       <LandingPage />
-     
-       <WelcomeSection />
-      <Portfolio /> 
+
+      <WelcomeSection />
+      <Portfolio />
 
       <Card />
       <WarehouseSection />
@@ -47,9 +47,9 @@ function Home() {
 
       {/* <LogisticsSection /> */}
 
-      
 
-      <Readyto/>
+
+      <Readyto />
     </>
   );
 }

@@ -23,9 +23,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchStates, fetchCities, clearCities } from '../../../../features/Location/locationSlice';
 import { createBooking } from "../../../../features/quotation/quotationSlice";
 import { fetchStations } from '../../../../features/stations/stationSlice'
-import CustomerSearch from "../../../../Components/CustomerSearch";
 import { useNavigate } from "react-router-dom";
 import CheckCircle from '@mui/icons-material/CheckCircle';
+import QcustomerSearch from "../../../../Components/QcustomerSearch";
 
 const toPay = ['pay', 'paid', 'none'];
 
@@ -229,7 +229,7 @@ const QuotationForm = () => {
                     <Typography variant="h6">From (Address)</Typography>
                   </Grid>
                   <Grid size={{ xs: 12 }}>
-                    <CustomerSearch
+                    <QcustomerSearch
                       onCustomerSelect={(customer) => {
                         console.log("Quotation customer data", customer);
                         if (customer) {
@@ -338,7 +338,7 @@ const QuotationForm = () => {
                   </Grid>
 
                   <Grid size={{ xs: 12 }}>
-                    <CustomerSearch
+                    <QcustomerSearch
                       type="receiver"
                       onCustomerSelect={(customer) => {
                         console.log("Selected To Customer:", customer);

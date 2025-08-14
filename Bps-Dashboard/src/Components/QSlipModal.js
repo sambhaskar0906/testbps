@@ -133,7 +133,7 @@ const QSlipModal = ({ open, handleClose, bookingData }) => {
   const {
     bookingId, quotationDate, fromCity, toCity, firstName, mobile,
     grandTotal, items, endStation,
-    senderName, fromCustomerName
+    senderName, fromCustomerName, topay
   } = bookingData;
 
   return (
@@ -162,7 +162,6 @@ const QSlipModal = ({ open, handleClose, bookingData }) => {
             <Grid container spacing={1}>
               {[
                 ['Ref No', items?.[0]?.refNo || bookingId],
-
                 ['Date', formatDate(quotationDate)],
                 ['From', fromCity],
                 ['To', endStation?.stationName || toCity],
@@ -184,6 +183,9 @@ const QSlipModal = ({ open, handleClose, bookingData }) => {
               Payment Summary
             </Typography>
 
+            <Typography variant="body1" fontWeight="bold" color="primary">
+              {(topay)}
+            </Typography>
 
             <Divider sx={{ my: 1.5 }} />
             <Box display="flex" justifyContent="space-between">

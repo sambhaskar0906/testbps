@@ -241,7 +241,34 @@ export const caReport = createAsyncThunk(
   }
 )
 
-
+export const fetchPendingCustomers = createAsyncThunk(
+  "pendingCustomers/fetchPendingCustomers",
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.get(`${BASE_URL}/pending-amount`);
+      // Adjust URL to match your backend route
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Failed to fetch pending customers");
+    }
+  }
+);
+export const receiveCustomerPayment = createAsyncThunk(
+  "bookings/receiveCustomerPayment",
+  async ({ customerId, amount }, { rejectWithValue }) => {
+    try {
+      const res = await axios.post(`${BASE_URL}/payment/${customerId}`, {
+        amount
+      });
+      return {
+        customerId,
+        paymentResponse: res.data
+      };
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
 const initialState = {
   list: [],
   list2: [],
@@ -252,7 +279,8 @@ const initialState = {
   activeDeliveriesCount: 0,
   cancelledDeliveriesCount: 0,
   totalRevenue: 0,
-
+  customers: [],
+  summary: null,
   form: {
     startStation: "",
     endStation: "",
@@ -507,7 +535,49 @@ const bookingSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      ;
+      .addCase(fetchPendingCustomers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchPendingCustomers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.customers = action.payload.customers || [];
+        state.summary = action.payload.summary || null;
+        state.error = null;
+      })
+      .addCase(fetchPendingCustomers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Something went wrong";
+      })
+      .addCase(receiveCustomerPayment.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(receiveCustomerPayment.fulfilled, (state, action) => {
+        state.loading = false;
+        const { customerId, paymentResponse } = action.payload;
+
+        // Update local state instantly
+        const updatedStats = paymentResponse.data.updatedStats;
+        const customerIndex = state.customers.findIndex(
+          (c) => c.customerId === customerId
+        );
+
+        if (customerIndex !== -1 && updatedStats) {
+          state.customers[customerIndex] = {
+            ...state.customers[customerIndex],
+            unpaidBookings: updatedStats.unpaidBookings,
+            totalAmount: updatedStats.totalAmount,
+            totalPaid: updatedStats.totalPaid,
+            pendingAmount: updatedStats.pendingAmount
+          };
+        }
+      })
+      .addCase(receiveCustomerPayment.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+
   }
 })
 export const { setFormField, resetForm, addBooking, setBooking, clearViewedBooking } = bookingSlice.actions;

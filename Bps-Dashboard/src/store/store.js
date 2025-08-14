@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import locationReducer from '../features/Location/locationSlice';
 import stationReducer from '../features/stations/stationSlice';
 import customerReducer from '../features/customers/customerSlice'
+import qcustomerReducer from '../features/qcustomers/qcustomerSlice'
 import driverReducer from '../features/Driver/driverSlice'
 import bookingReducer from '../features/booking/bookingSlice'
 import quotationReducer from '../features/quotation/quotationSlice'
@@ -17,6 +18,7 @@ export const store = configureStore({
     stations: stationReducer,
     location: locationReducer,
     customers: customerReducer,
+    qcustomers: qcustomerReducer,
     drivers: driverReducer,
     bookings: bookingReducer,
     quotations: quotationReducer,
